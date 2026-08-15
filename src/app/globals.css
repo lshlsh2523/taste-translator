@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+:root {
+  --color-paper: #f6f1e8;
+  --color-ink: #211d18;
+  --color-ink-soft: #56504a;
+  --color-ink-faint: #6f685c;
+  --color-hairline: #e3dbcb;
+  --color-tagline: #928b80;
+}
+
+@theme inline {
+  --color-paper: var(--color-paper);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-ink-faint: var(--color-ink-faint);
+  --color-hairline: var(--color-hairline);
+  --color-tagline: var(--color-tagline);
+  --font-sans: var(--font-pretendard);
+  --font-headline: var(--font-gowun-batang);
+  --font-accent-en: var(--font-instrument-serif);
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-pretendard), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    animation: reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .reveal-1 {
+    animation-delay: 0.05s;
+  }
+
+  .reveal-2 {
+    animation-delay: 0.2s;
+  }
+
+  .reveal-3 {
+    animation-delay: 0.36s;
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal-container {
+  --reveal-radius: clamp(90px, 13vw, 190px);
+  --reveal-x: 50%;
+  --reveal-y: 50%;
+}
+
+.reveal-mask {
+  mask-image: radial-gradient(
+    circle var(--reveal-radius) at var(--reveal-x) var(--reveal-y),
+    black 0%,
+    black 55%,
+    transparent 100%
+  );
+  -webkit-mask-image: radial-gradient(
+    circle var(--reveal-radius) at var(--reveal-x) var(--reveal-y),
+    black 0%,
+    black 55%,
+    transparent 100%
+  );
+}
+
+.reveal-ring {
+  position: absolute;
+  left: var(--reveal-x);
+  top: var(--reveal-y);
+  width: calc(var(--reveal-radius) * 2);
+  height: calc(var(--reveal-radius) * 2);
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  border: 1px solid color-mix(in oklab, var(--color-ink) 45%, transparent);
+  pointer-events: none;
+}
+
+.reveal-container[data-interacted="true"] .reveal-hint {
+  opacity: 0;
+}
+
+.leader-line {
+  background-color: var(--color-tagline);
+}
+
+.tag-card {
+  box-shadow: none;
+  border-radius: 0;
+}
