@@ -4,7 +4,7 @@ import { tasteLibrary } from "@/data/taste-library";
 import type { TranslateResponse } from "@/types/taste";
 
 export async function POST(request: Request) {
-  let body: { query?: unknown; term?: unknown };
+  let body: { query?: unknown; term?: unknown; originalQuery?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -13,7 +13,10 @@ export async function POST(request: Request) {
 
   try {
     if (typeof body.term === "string" && body.term.trim()) {
-      const result = await retryWithTerm(body.term.trim(), tasteLibrary);
+      // originalQuery: 직전 검색의 원문 문장 — 2단계 색상 신호 판단용으로
+      // 넘겨준다 (없어도 동작함, 색상 판단 정확도만 떨어짐).
+      const originalQuery = typeof body.originalQuery === "string" ? body.originalQuery : undefined;
+      const result = await retryWithTerm(body.term.trim(), tasteLibrary, originalQuery);
       return NextResponse.json<TranslateResponse>(result);
     }
 

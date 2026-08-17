@@ -77,6 +77,7 @@ export function buildStage2Prompt(
   matchedTerm: MatchedTerm,
   library: TasteLibrary,
   candidateProducts: CandidateProduct[],
+  originalQuery?: string,
 ): string {
   const tasteTermCard = library.tasteTerms.find((t) => t.term === matchedTerm.term);
   const matchedTermForPrompt = {
@@ -138,6 +139,26 @@ export function buildStage2Prompt(
 형태만 겹쳤다면 "형태"만 쓰지 말고, 그게 유일한 신호라는 걸 사용자가
 알 수 있게 "형태만 부분적으로 겹침"처럼 정직하게 표현하세요.
 
+# 색상 신호 (정렬 전용 — total_score 계산에는 포함 안 됨, 신규)
+
+카탈로그에는 색상 메타데이터가 없어서(제품명에도 색상 정보가 거의
+없음) 위의 형태/소재/이미지 점수는 색상을 반영하지 못합니다. 그래서
+색상은 별도로, 채점이 아니라 **정렬 우선순위**로만 다룹니다.
+
+- matched_term.matching_keywords뿐 아니라 **아래 "사용자 원문 입력"도
+  반드시 같이 확인**해서 색상 언급이 있는지 판단하세요.
+  matching_keywords는 1단계가 형태/소재 위주로 요약한 값이라 색상
+  단어가 누락될 수 있습니다 — 원문에 "분홍색", "블랙" 같은 색상
+  표현이 있으면 matching_keywords에 없어도 색상 언급으로 취급하세요.
+- 색상 언급이 있으면, 각 추천 제품의 이미지를 보고 그 색상과 실제로
+  맞는지 판단해서 match_breakdown.color_match(true/false)와
+  color_reason(한 문장)을 채우세요.
+- 사용자가 특정 색을 전혀 언급하지 않았다면 color_match는 그냥
+  true로 두세요 — 색상 미언급을 불일치로 취급하지 마세요.
+- 이 신호는 추천 여부(임계값 통과)에는 영향을 주지 않습니다. 이미
+  임계값을 넘긴 제품들 사이에서, 화면에 보여주는 순서만 색상이 맞는
+  제품이 먼저 오도록 오케스트레이션 단계에서 사용됩니다.
+
 # 출력 형식 (JSON)
 {
   "no_product_match": false,
@@ -150,11 +171,16 @@ export function buildStage2Prompt(
         "shape_match": true/false,
         "material_match": ["겹친 키워드"],
         "visual_match_score": 0~3,
-        "visual_match_reason": "한 문장"
+        "visual_match_reason": "한 문장",
+        "color_match": true/false,
+        "color_reason": "한 문장 (색상 언급 없었으면 \\"사용자가 특정 색을 언급하지 않음\\" 등으로)"
       }
     }
   ]
 }
+
+# 사용자 원문 입력 (색상 신호 판단 전용 — 스코어링에는 안 씀)
+${originalQuery ?? "(없음 — 인접 취향 카드 클릭 등으로 취향 용어가 직접 선택된 경우)"}
 
 # matched_term
 ${JSON.stringify(matchedTermForPrompt, null, 2)}

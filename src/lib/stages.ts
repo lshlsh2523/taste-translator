@@ -1,4 +1,4 @@
-import { fetchImageAsInlineData, getGeminiClient, STAGE_MODEL } from "@/lib/gemini";
+import { fetchImageAsInlineData, getGeminiClient, STAGE_MODEL, withTransientRetry } from "@/lib/gemini";
 import { buildStage1Prompt, buildStage2Prompt } from "@/lib/prompts";
 import type {
   CandidateProduct,
@@ -58,8 +58,18 @@ const STAGE2_SCHEMA = {
               material_match: { type: "array", items: { type: "string" } },
               visual_match_score: { type: "number" },
               visual_match_reason: { type: "string" },
+              // 점수(total_score)에는 포함 안 됨 — 화면 정렬 우선순위 전용.
+              color_match: { type: "boolean" },
+              color_reason: { type: "string" },
             },
-            required: ["shape_match", "material_match", "visual_match_score", "visual_match_reason"],
+            required: [
+              "shape_match",
+              "material_match",
+              "visual_match_score",
+              "visual_match_reason",
+              "color_match",
+              "color_reason",
+            ],
           },
         },
         required: ["product_name", "total_score", "match_summary", "match_breakdown"],
@@ -71,14 +81,16 @@ const STAGE2_SCHEMA = {
 
 export async function callStage1(userInput: string, library: TasteLibrary): Promise<Stage1Result> {
   const client = getGeminiClient();
-  const response = await client.models.generateContent({
-    model: STAGE_MODEL,
-    contents: buildStage1Prompt(userInput, library),
-    config: {
-      responseMimeType: "application/json",
-      responseJsonSchema: STAGE1_SCHEMA,
-    },
-  });
+  const response = await withTransientRetry(() =>
+    client.models.generateContent({
+      model: STAGE_MODEL,
+      contents: buildStage1Prompt(userInput, library),
+      config: {
+        responseMimeType: "application/json",
+        responseJsonSchema: STAGE1_SCHEMA,
+      },
+    }),
+  );
   if (!response.text) {
     throw new Error("1단계 모델 응답이 비어있습니다.");
   }
@@ -89,6 +101,7 @@ export async function callStage2(
   matchedTerm: MatchedTerm,
   library: TasteLibrary,
   candidateProducts: CandidateProduct[],
+  originalQuery?: string,
 ): Promise<Stage2Result> {
   const client = getGeminiClient();
 
@@ -110,21 +123,25 @@ export async function callStage2(
   const parts: Array<
     | { text: string }
     | { inlineData: { mimeType: string; data: string } }
-  > = [{ text: buildStage2Prompt(matchedTerm, library, usable.map((u) => u.product)) }];
+  > = [
+    { text: buildStage2Prompt(matchedTerm, library, usable.map((u) => u.product), originalQuery) },
+  ];
 
   for (const { product, inline } of usable) {
     parts.push({ text: `다음 이미지는 "${product.name}"의 이미지입니다.` });
     parts.push({ inlineData: inline });
   }
 
-  const response = await client.models.generateContent({
-    model: STAGE_MODEL,
-    contents: [{ role: "user", parts }],
-    config: {
-      responseMimeType: "application/json",
-      responseJsonSchema: STAGE2_SCHEMA,
-    },
-  });
+  const response = await withTransientRetry(() =>
+    client.models.generateContent({
+      model: STAGE_MODEL,
+      contents: [{ role: "user", parts }],
+      config: {
+        responseMimeType: "application/json",
+        responseJsonSchema: STAGE2_SCHEMA,
+      },
+    }),
+  );
   if (!response.text) {
     throw new Error("2단계 모델 응답이 비어있습니다.");
   }

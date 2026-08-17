@@ -17,6 +17,7 @@ import type {
   CandidateProduct,
   EnrichedRecommendedProduct,
   MatchedTerm,
+  RecommendedProduct,
   TasteLibrary,
   TranslateResponse,
 } from "@/types/taste";
@@ -29,7 +30,7 @@ const normalize = (s: string) => s.trim().toLowerCase();
 // 살짝 바꿔 썼거나 하는 경우), 링크·이미지를 지어낼 수 없으니 그 항목은
 // 결과에서 제외한다 — 없는 링크를 보여주는 것보다 낫다.
 function enrichProducts(
-  recommended: { product_name: string }[],
+  recommended: RecommendedProduct[],
   candidates: CandidateProduct[],
 ): EnrichedRecommendedProduct[] {
   const byName = new Map(candidates.map((c) => [normalize(c.name), c]));
@@ -38,13 +39,21 @@ function enrichProducts(
     const candidate = byName.get(normalize(rec.product_name));
     if (!candidate) continue;
     enriched.push({
-      ...(rec as EnrichedRecommendedProduct),
+      ...rec,
       image: candidate.image,
       product_url: candidate.product_url,
       primary_sku: candidate.primary_sku,
     });
   }
-  return enriched;
+  // 색상은 임계값 통과 여부(추천 대상인지)에는 영향을 안 주고, 이미
+  // 통과한 제품들 사이에서 노출 순서에만 반영한다 — 색상 일치 제품을
+  // 먼저 보여줘서 클릭을 유도(사용자 요청 사항). 동점이면 total_score로
+  // 2차 정렬.
+  return enriched.sort((a, b) => {
+    const colorDiff = Number(b.match_breakdown.color_match) - Number(a.match_breakdown.color_match);
+    if (colorDiff !== 0) return colorDiff;
+    return b.total_score - a.total_score;
+  });
 }
 
 // 2단계는 이미지를 직접 보고 채점하는 만큼, 같은 입력이어도 점수가
@@ -57,6 +66,7 @@ const STAGE2_RETRIES = 1;
 async function tryMatchedTerm(
   matchedTerm: MatchedTerm,
   library: TasteLibrary,
+  originalQuery?: string,
 ): Promise<{ success: true; products: EnrichedRecommendedProduct[] } | { success: false }> {
   const tasteTermCard = library.tasteTerms.find((t) => t.term === matchedTerm.term);
   if (!tasteTermCard) return { success: false };
@@ -68,7 +78,7 @@ async function tryMatchedTerm(
   if (candidates.length === 0) return { success: false };
 
   for (let attempt = 0; attempt <= STAGE2_RETRIES; attempt++) {
-    const stage2Result = await callStage2(matchedTerm, library, candidates);
+    const stage2Result = await callStage2(matchedTerm, library, candidates, originalQuery);
     if (stage2Result.no_product_match || stage2Result.recommended_products.length === 0) {
       continue;
     }
@@ -97,7 +107,7 @@ export async function orchestrateTranslate(
 
   for (let i = 0; i < sortedTerms.length; i++) {
     const matchedTerm = sortedTerms[i];
-    const result = await tryMatchedTerm(matchedTerm, library);
+    const result = await tryMatchedTerm(matchedTerm, library, query);
     if (result.success) {
       const tasteTermCard = library.tasteTerms.find((t) => t.term === matchedTerm.term) ?? null;
       return {
@@ -136,6 +146,7 @@ export async function orchestrateTranslate(
 export async function retryWithTerm(
   termName: string,
   library: TasteLibrary,
+  originalQuery?: string,
 ): Promise<TranslateResponse> {
   const tasteTermCard = library.tasteTerms.find((t) => t.term === termName);
   if (!tasteTermCard) {
@@ -144,6 +155,8 @@ export async function retryWithTerm(
 
   // 이 경로는 1단계 모델을 다시 부르지 않으므로 matching_keywords를
   // 동적으로 만들어낼 수 없다 — 취향 카드에 연결된 소재 신호로 대신한다.
+  // originalQuery(직전 검색 원문)가 남아있으면 색상 신호 판단용으로
+  // 2단계에 그대로 넘겨준다 — 없으면(순수 카드 클릭) 생략.
   const syntheticMatchedTerm: MatchedTerm = {
     term: tasteTermCard.term,
     trust_level: tasteTermCard.trust_level,
@@ -152,7 +165,7 @@ export async function retryWithTerm(
     confidence: 1,
   };
 
-  const result = await tryMatchedTerm(syntheticMatchedTerm, library);
+  const result = await tryMatchedTerm(syntheticMatchedTerm, library, originalQuery);
   if (result.success) {
     return {
       status: "success",

@@ -90,6 +90,10 @@ export type MatchBreakdown = {
   material_match: string[];
   visual_match_score: number; // 0~3
   visual_match_reason: string;
+  // 정렬 전용 — total_score 계산에는 포함 안 됨 (카탈로그에 색상
+  // 메타데이터가 없어서 별도 처리). 사용자가 색을 언급 안 했으면 true.
+  color_match: boolean;
+  color_reason: string;
 };
 
 export type RecommendedProduct = {

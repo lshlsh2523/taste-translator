@@ -42,11 +42,11 @@ export async function fetchTranslate(query: string): Promise<TranslateResponse> 
   return (await res.json()) as TranslateResponse;
 }
 
-export async function runTermRetry(term: string): Promise<TranslateResponse> {
+export async function runTermRetry(term: string, originalQuery?: string): Promise<TranslateResponse> {
   const res = await fetch("/api/translate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ term }),
+    body: JSON.stringify({ term, originalQuery }),
   });
   if (!res.ok) {
     throw new Error(`재요청 실패: ${res.status}`);

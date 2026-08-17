@@ -48,9 +48,12 @@ export function ResultView() {
   }, [query]);
 
   const handleAdjacentClick = async (term: string) => {
+    // 직전 검색 원문이 남아있으면(예: 성공 결과에서 "이런 무드도
+    // 감지했어요" 칩을 눌렀을 때) 색상 신호 판단용으로 같이 넘긴다.
+    const previousQuery = state.status === "loaded" ? state.query : undefined;
     setState({ status: "loading" });
     try {
-      const response = await runTermRetry(term);
+      const response = await runTermRetry(term, previousQuery);
       storeResult(term, response);
       setState({ status: "loaded", query: term, response });
     } catch {
@@ -130,7 +133,9 @@ function ResultBody({
         &ldquo;{query}&rdquo;
       </p>
 
-      {response.status === "success" && <SuccessResult response={response} />}
+      {response.status === "success" && (
+        <SuccessResult response={response} onAdjacentClick={onAdjacentClick} />
+      )}
       {response.status === "adjacent_fallback" && (
         <AdjacentFallbackResult response={response} onAdjacentClick={onAdjacentClick} />
       )}
@@ -141,10 +146,17 @@ function ResultBody({
 
 function SuccessResult({
   response,
+  onAdjacentClick,
 }: {
   response: Extract<TranslateResponse, { status: "success" }>;
+  onAdjacentClick: (term: string) => void;
 }) {
-  const { matchedTerm, luxuryTerm, products, usedFallbackRank } = response;
+  const { matchedTerm, luxuryTerm, products, usedFallbackRank, allMatchedTerms } = response;
+  // 1단계가 "사랑스러운 무드의 단정한 분위기"처럼 서로 다른 무드를 여러
+  // 취향으로 나눠 잡아도, 지금 화면엔 그중 하나(1순위로 성공한 것)만
+  // 제품과 함께 보인다 — 나머지 취향은 사라지는 게 아니라 클릭 가능한
+  // 카드로 남겨서, 사용자가 원하면 그 취향 기준으로 다시 찾아볼 수 있게.
+  const otherMatchedTerms = allMatchedTerms.filter((t) => t.term !== matchedTerm.term);
 
   return (
     <div className="mt-10">
@@ -201,6 +213,25 @@ function SuccessResult({
           ))}
         </div>
       </div>
+
+      {otherMatchedTerms.length > 0 && (
+        <div className="border-hairline mt-8 border-t pt-8">
+          <p className="text-ink-faint text-[0.75rem]">이런 무드도 감지했어요</p>
+          <div className="mt-4 flex flex-col gap-3">
+            {otherMatchedTerms.map((term) => (
+              <button
+                key={term.term}
+                type="button"
+                onClick={() => onAdjacentClick(term.term)}
+                className="border-hairline hover:border-ink text-left transition-colors border p-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              >
+                <p className="text-ink font-headline text-[1rem] font-bold">{term.term}</p>
+                <p className="text-ink-soft mt-1 text-[0.8125rem] leading-[1.5]">{term.reason}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
