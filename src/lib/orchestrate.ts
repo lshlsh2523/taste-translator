@@ -47,6 +47,13 @@ function enrichProducts(
   return enriched;
 }
 
+// 2단계는 이미지를 직접 보고 채점하는 만큼, 같은 입력이어도 점수가
+// 임계값 바로 근처에서 실행마다 조금씩 달라질 수 있다(실측: 같은 취향·
+// 같은 후보로도 성공/실패가 갈리는 걸 확인함). 그래서 한 취향을 다음
+// 순위로 넘기기 전에 한 번 더 재시도한다 — 진짜로 안 맞는 취향과, 채점
+// 변동성 때문에 우연히 실패한 취향을 구분하기 위함.
+const STAGE2_RETRIES = 1;
+
 async function tryMatchedTerm(
   matchedTerm: MatchedTerm,
   library: TasteLibrary,
@@ -57,15 +64,16 @@ async function tryMatchedTerm(
   const candidates = getCandidateProducts(tasteTermCard, library);
   if (candidates.length === 0) return { success: false };
 
-  const stage2Result = await callStage2(matchedTerm, library, candidates);
-  if (stage2Result.no_product_match || stage2Result.recommended_products.length === 0) {
-    return { success: false };
+  for (let attempt = 0; attempt <= STAGE2_RETRIES; attempt++) {
+    const stage2Result = await callStage2(matchedTerm, library, candidates);
+    if (stage2Result.no_product_match || stage2Result.recommended_products.length === 0) {
+      continue;
+    }
+    const products = enrichProducts(stage2Result.recommended_products, candidates);
+    if (products.length > 0) return { success: true, products };
   }
 
-  const products = enrichProducts(stage2Result.recommended_products, candidates);
-  if (products.length === 0) return { success: false };
-
-  return { success: true, products };
+  return { success: false };
 }
 
 export async function orchestrateTranslate(
