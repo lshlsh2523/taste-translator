@@ -13,11 +13,13 @@ export function getGeminiClient(): GoogleGenAI {
   return client;
 }
 
-// gemini-2.5-flash: 무료 티어에 남아있는 모델(2026-04 기준 Pro는 무료
-// 티어에서 빠짐), 이미지 입력·JSON 구조화 출력 모두 지원.
-// 무료 티어 레이트리밋: 분당 10회, 하루 250회 — 검색 1번당 최대 1(1단계)
-// + 3(2단계 재시도) = 4회 요청이라 여유 있음.
-export const STAGE_MODEL = "gemini-2.5-flash";
+// gemini-2.5-flash-lite: gemini-2.5-flash가 실측 무료 티어 하루 20회
+// 한도로 개발 중 바로 소진돼서(공개된 문서상 250회라던 수치와 실제
+// 429 에러 메시지의 quotaValue가 달랐음 — 문서보다 API가 반환하는
+// 실제 에러 메시지를 신뢰) flash-lite로 전환. 채점 정밀도는 flash보다
+// 약간 떨어질 수 있지만 이미지 입력·JSON 구조화 출력 다 지원하고
+// 하루 한도가 훨씬 넉넉함.
+export const STAGE_MODEL = "gemini-2.5-flash-lite";
 
 // 이미지를 URL로 바로 보낼 수 없고(원격 URL을 직접 참조하는 API가 아님),
 // base64로 인코딩한 inlineData로만 보낼 수 있다 — 매 2단계 호출마다 후보
