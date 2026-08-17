@@ -1,4 +1,4 @@
-import { getAnthropicClient, STAGE_MODEL } from "@/lib/anthropic";
+import { fetchImageAsInlineData, getGeminiClient, STAGE_MODEL } from "@/lib/gemini";
 import { buildStage1Prompt, buildStage2Prompt } from "@/lib/prompts";
 import type {
   CandidateProduct,
@@ -8,6 +8,9 @@ import type {
   TasteLibrary,
 } from "@/types/taste";
 
+// Gemini의 responseJsonSchema는 표준 JSON Schema를 받지만, anyOf/다중
+// type 배열 같은 구성은 지원이 불확실해서 피한다. 선택 필드는 required에서
+// 빼서 모델이 아예 생략할 수 있게 한다 (null을 명시적으로 허용하는 대신).
 const STAGE1_SCHEMA = {
   type: "object",
   properties: {
@@ -23,25 +26,17 @@ const STAGE1_SCHEMA = {
           confidence: { type: "number" },
         },
         required: ["term", "trust_level", "reason", "matching_keywords", "confidence"],
-        additionalProperties: false,
       },
     },
     no_clear_match: { type: "boolean" },
-    fallback_note: { type: ["string", "null"] },
+    fallback_note: { type: "string" },
     suggested_new_term: {
-      anyOf: [
-        { type: "null" },
-        {
-          type: "object",
-          properties: { description: { type: "string" } },
-          required: ["description"],
-          additionalProperties: false,
-        },
-      ],
+      type: "object",
+      properties: { description: { type: "string" } },
+      required: ["description"],
     },
   },
   required: ["matched_terms", "no_clear_match"],
-  additionalProperties: false,
 } as const;
 
 const STAGE2_SCHEMA = {
@@ -65,35 +60,29 @@ const STAGE2_SCHEMA = {
               visual_match_reason: { type: "string" },
             },
             required: ["shape_match", "material_match", "visual_match_score", "visual_match_reason"],
-            additionalProperties: false,
           },
         },
         required: ["product_name", "total_score", "match_summary", "match_breakdown"],
-        additionalProperties: false,
       },
     },
   },
   required: ["no_product_match", "recommended_products"],
-  additionalProperties: false,
 } as const;
 
-function firstText(content: { type: string; text?: string }[]): string {
-  const block = content.find((b) => b.type === "text");
-  if (!block?.text) {
-    throw new Error("모델 응답에 텍스트 블록이 없습니다.");
-  }
-  return block.text;
-}
-
 export async function callStage1(userInput: string, library: TasteLibrary): Promise<Stage1Result> {
-  const client = getAnthropicClient();
-  const response = await client.messages.create({
+  const client = getGeminiClient();
+  const response = await client.models.generateContent({
     model: STAGE_MODEL,
-    max_tokens: 4096,
-    output_config: { format: { type: "json_schema", schema: STAGE1_SCHEMA } },
-    messages: [{ role: "user", content: buildStage1Prompt(userInput, library) }],
+    contents: buildStage1Prompt(userInput, library),
+    config: {
+      responseMimeType: "application/json",
+      responseJsonSchema: STAGE1_SCHEMA,
+    },
   });
-  return JSON.parse(firstText(response.content)) as Stage1Result;
+  if (!response.text) {
+    throw new Error("1단계 모델 응답이 비어있습니다.");
+  }
+  return JSON.parse(response.text) as Stage1Result;
 }
 
 export async function callStage2(
@@ -101,27 +90,43 @@ export async function callStage2(
   library: TasteLibrary,
   candidateProducts: CandidateProduct[],
 ): Promise<Stage2Result> {
-  const client = getAnthropicClient();
+  const client = getGeminiClient();
 
-  // 텍스트 프롬프트(스코어링 규칙 + candidate_products 메타데이터) 뒤에,
-  // 이미지 신호(0~3점) 채점을 위해 각 후보 제품의 이미지를 실제로 붙여서
-  // 보낸다. 프롬프트 본문의 candidate_products에는 image URL이 문자열로도
-  // 들어있지만, 모델이 실제로 "보게" 하려면 image content block이 필요.
-  const content: Array<
-    | { type: "text"; text: string }
-    | { type: "image"; source: { type: "url"; url: string } }
-  > = [{ type: "text", text: buildStage2Prompt(matchedTerm, library, candidateProducts) }];
+  // 이미지는 원격 URL을 직접 못 넣고 base64 inlineData로만 보낼 수 있어서
+  // 후보 이미지를 먼저 전부 받아온다. 못 받아온 이미지가 있는 후보는
+  // 이번 2단계 호출에서 통째로 제외한다 — 텍스트 정보만 주고 이미지
+  // 없이 "이미지 신호"를 매기게 하면 규칙을 어기게 되므로.
+  const withImages = await Promise.all(
+    candidateProducts.map(async (product) => ({
+      product,
+      inline: await fetchImageAsInlineData(product.image),
+    })),
+  );
+  const usable = withImages.filter(
+    (w): w is { product: CandidateProduct; inline: { mimeType: string; data: string } } =>
+      w.inline !== null,
+  );
 
-  for (const product of candidateProducts) {
-    content.push({ type: "text", text: `다음 이미지는 "${product.name}"의 이미지입니다.` });
-    content.push({ type: "image", source: { type: "url", url: product.image } });
+  const parts: Array<
+    | { text: string }
+    | { inlineData: { mimeType: string; data: string } }
+  > = [{ text: buildStage2Prompt(matchedTerm, library, usable.map((u) => u.product)) }];
+
+  for (const { product, inline } of usable) {
+    parts.push({ text: `다음 이미지는 "${product.name}"의 이미지입니다.` });
+    parts.push({ inlineData: inline });
   }
 
-  const response = await client.messages.create({
+  const response = await client.models.generateContent({
     model: STAGE_MODEL,
-    max_tokens: 4096,
-    output_config: { format: { type: "json_schema", schema: STAGE2_SCHEMA } },
-    messages: [{ role: "user", content }],
+    contents: [{ role: "user", parts }],
+    config: {
+      responseMimeType: "application/json",
+      responseJsonSchema: STAGE2_SCHEMA,
+    },
   });
-  return JSON.parse(firstText(response.content)) as Stage2Result;
+  if (!response.text) {
+    throw new Error("2단계 모델 응답이 비어있습니다.");
+  }
+  return JSON.parse(response.text) as Stage2Result;
 }
