@@ -4,7 +4,7 @@ import { useRef, useState, type KeyboardEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { runTranslation } from "@/lib/mock-translate";
+import { runTranslation } from "@/lib/translate-client";
 import { SearchLoading } from "@/components/SearchLoading";
 
 const STARTERS = [
