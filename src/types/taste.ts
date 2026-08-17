@@ -4,31 +4,45 @@
 
 export type TrustLevel = "학술 용어" | "비평 용어" | "통용어";
 
-// 취향 용어 카드 (라이브러리 항목). "예시 형태"는 이 카드에 직접 저장하지
-// 않고, linked_luxury_terms로 연결된 럭셔리 용어 카드의 mcm_subcategory를
-// 통해 매번 파생시킨다 (resolveExampleShapes 참고) — 취향 카드와 형태
-// 데이터의 출처를 분리해 한쪽만 갱신해도 어긋나지 않게 하기 위함.
+// 취향 용어 카드 (라이브러리 항목). "예시 형태"·"소재 신호"는 이 카드에
+// 직접 저장하지 않고, linked_luxury_terms로 연결된 럭셔리 용어 카드의
+// mcm_subcategory/material_keywords를 통해 매번 파생시킨다
+// (resolveShapeSignals/resolveMaterialSignals 참고) — 취향 카드와
+// 형태·소재 데이터의 출처를 분리해 한쪽만 갱신해도 어긋나지 않게 하기
+// 위함.
+//
+// 1단계 프롬프트의 출력 스키마(MatchedTerm.matching_keywords)는 모델이
+// 사용자 입력을 보고 그때그때 만들어내는 값이라, 여기 라이브러리 카드에는
+// 고정된 매칭 키워드를 따로 두지 않는다 — 대신 유래(origin) 텍스트 자체를
+// 풍부하게 써서 모델이 참고할 맥락을 준다.
 export type TasteTermCard = {
   term: string; // 용어명 (영문 포함), 예: "Y2K", "꾸안꾸" (영문 대응 없음)
   trust_level: TrustLevel;
   origin: string; // 유래
-  matching_keywords: string[]; // 색상/소재/무드 힌트
-  linked_luxury_terms: string[]; // 연결된 럭셔리 용어 카드의 term (정확히 일치)
+  linked_luxury_terms: string[]; // 연결된 럭셔리 용어 카드의 term (정확히 일치) — 형태 먼저, 소재/기법 나중 순서
+  // 유래 설명이 필요 없는 일반 원재료명(레더/나일론/코튼/데님/실크)은
+  // 별도 카드를 안 만들고 여기에 직접 적어서 카탈로그 material_keywords와
+  // 바로 문자열 매칭한다.
+  raw_material_keywords?: string[];
 };
 
-// 럭셔리 전문 용어 카드 (가방 형태 11개 + 지갑/의류/슈즈/패션소품 16개 = 27개)
+// 럭셔리 전문 용어 카드 — 형태 11개(MCM 실제 스타일 필터) + 소재·기법
+// 14개(유래가 검증 가능한 것만 카드화) = 25개.
 export type LuxuryTermCard = {
-  term: string; // 예: "사첼 백 (Satchel)"
+  term: string; // 예: "사첼 백 (Satchel)", "스터드"
   origin: string;
-  shape_features: string;
-  matching_mood: string[];
-  // MCM 카탈로그 subcategory 값과 매칭. 카드 하나가 여러 subcategory에
-  // 걸치는 경우(예: 반지갑 → 반지갑/반지갑-머니클립)가 있어 배열.
-  // MCM 사이트의 "스타일 필터" 명칭 기준이라, 카탈로그 스크래핑 breadcrumb
-  // 기반 subcategory와 표기가 정확히 안 맞는 카드도 있음(예: 미니백,
-  // 클러치 일부) — 이건 원본 데이터 그대로이고, 2단계 형태 신호는 참고
-  // 신호(+1점)일 뿐 하드 필터가 아니므로 억지로 맞추지 않는다.
-  mcm_subcategory: string[];
+  kind: "shape" | "material"; // 형태 카드인지 소재·기법 카드인지
+  matching_mood?: string[];
+  // kind: "shape"일 때만 채움. MCM 카탈로그 subcategory 값과 매칭.
+  // 카드 하나가 여러 subcategory에 걸치는 경우가 있어 배열.
+  // MCM 사이트의 "스타일 필터" 명칭 기준이라, 카탈로그 스크래핑
+  // breadcrumb 기반 subcategory와 표기가 정확히 안 맞는 카드도 있음
+  // (예: 미니백) — 이건 원본 데이터 그대로이고, 2단계 형태 신호는
+  // 참고 신호(+1점)일 뿐 하드 필터가 아니므로 억지로 맞추지 않는다.
+  mcm_subcategory?: string[];
+  // kind: "material"일 때만 채움. 카탈로그 material_keywords와 매칭
+  // (scripts/build-catalog.mjs의 추출 결과와 표기를 맞춤).
+  material_keywords?: string[];
 };
 
 export type TasteLibrary = {
@@ -106,8 +120,8 @@ export type EnrichedRecommendedProduct = RecommendedProduct & {
 export type AdjacentTasteCard = {
   term: string;
   trust_level: TrustLevel;
-  matching_keywords: string[];
-  shared_keywords: string[]; // 실패한 matched_terms와 겹치는 키워드
+  linked_luxury_terms: string[];
+  shared_luxury_terms: string[]; // 실패한 matched_terms와 겹치는 럭셔리 용어(형태/소재)
 };
 
 export type TranslateSuccess = {

@@ -1,5 +1,5 @@
 import type { CandidateProduct, MatchedTerm, TasteLibrary } from "@/types/taste";
-import { resolveExampleShapes } from "@/data/taste-library";
+import { resolveShapeSignals } from "@/data/taste-library";
 
 // 확정 프롬프트(사용자 제공 원문)를 그대로 이식. 문구를 바꾸지 말 것 — 바꿔야
 // 한다면 Notion 원본도 같이 갱신해야 함.
@@ -41,6 +41,12 @@ export function buildStage1Prompt(userInput: string, library: TasteLibrary): str
     "suggested_new_term" 필드에 {"description": "빠진 무드에 대한 한 문장 설명"}
     형태로 구조화해서 기록하세요. 자유 텍스트로 흘리지 말고 이 필드에만 쓰세요.
 12. 응답은 용어의 영문 표기(괄호 안)를 제외하고 전부 한국어로 작성하세요.
+13. 입력에 상충되지는 않지만 서로 다른 무드 두 가지 이상이 섞여 있으면
+    (예: "귀엽고 발랄한 캐주얼함"), 반드시 하나의 용어에 억지로 욱여넣지
+    말고, 각 무드를 가장 잘 담당하는 서로 다른 용어(예: 걸리시 + 캐주얼)를
+    각각 matched_terms에 넣으세요. "러블리 캐주얼"처럼 정확한 유래·학명이
+    확인되지 않는 마케팅 조어는 라이브러리에 카드로 없으니, 새 용어를
+    지어내는 대신 이미 검증된 카드 여러 개를 조합해서 표현하세요.
 
 
 # 출력 형식 (JSON)
@@ -76,7 +82,7 @@ export function buildStage2Prompt(
   const matchedTermForPrompt = {
     term: matchedTerm.term,
     matching_keywords: matchedTerm.matching_keywords,
-    example_shapes: tasteTermCard ? resolveExampleShapes(tasteTermCard, library) : [],
+    example_shapes: tasteTermCard ? resolveShapeSignals(tasteTermCard, library) : [],
   };
 
   return `# 제품 매칭 단계 (수정본)

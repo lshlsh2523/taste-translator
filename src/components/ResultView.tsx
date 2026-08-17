@@ -267,7 +267,7 @@ function AdjacentFallbackResult({
           >
             <p className="text-ink font-headline text-[1.125rem] font-bold">{card.term}</p>
             <p className="text-ink-soft mt-1.5 text-[0.8125rem]">
-              겹치는 키워드: {card.shared_keywords.join(", ")}
+              겹치는 럭셔리 용어: {card.shared_luxury_terms.join(", ")}
             </p>
           </button>
         ))}

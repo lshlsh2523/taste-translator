@@ -12,7 +12,7 @@
 import { findAdjacentTerms } from "@/lib/adjacent-terms";
 import { getCandidateProducts } from "@/lib/catalog";
 import { callStage1, callStage2 } from "@/lib/stages";
-import { pickRepresentativeLuxuryTerm } from "@/data/taste-library";
+import { pickRepresentativeLuxuryTerm, resolveMaterialSignals } from "@/data/taste-library";
 import type {
   CandidateProduct,
   EnrichedRecommendedProduct,
@@ -61,7 +61,10 @@ async function tryMatchedTerm(
   const tasteTermCard = library.tasteTerms.find((t) => t.term === matchedTerm.term);
   if (!tasteTermCard) return { success: false };
 
-  const candidates = getCandidateProducts(tasteTermCard, library);
+  // matchedTerm.matching_keywords는 1단계 모델이 이번 사용자 입력을 보고
+  // 그때그때 만들어낸 값(확정 프롬프트 출력 스키마) — 후보를 좁힐 때도
+  // 정적 라이브러리 값 대신 이 동적 키워드를 우선 신호로 쓴다.
+  const candidates = getCandidateProducts(tasteTermCard, matchedTerm.matching_keywords, library);
   if (candidates.length === 0) return { success: false };
 
   for (let attempt = 0; attempt <= STAGE2_RETRIES; attempt++) {
@@ -139,11 +142,13 @@ export async function retryWithTerm(
     return { status: "no_match", query: termName, reason: "라이브러리에 없는 취향 용어입니다." };
   }
 
+  // 이 경로는 1단계 모델을 다시 부르지 않으므로 matching_keywords를
+  // 동적으로 만들어낼 수 없다 — 취향 카드에 연결된 소재 신호로 대신한다.
   const syntheticMatchedTerm: MatchedTerm = {
     term: tasteTermCard.term,
     trust_level: tasteTermCard.trust_level,
     reason: "인접 취향 카드에서 직접 선택됨",
-    matching_keywords: tasteTermCard.matching_keywords,
+    matching_keywords: resolveMaterialSignals(tasteTermCard, library),
     confidence: 1,
   };
 
