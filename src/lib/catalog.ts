@@ -14,6 +14,22 @@ const catalog = catalogData as CandidateProduct[];
 // 최대한 넓게 잡은 뒤 겹침 개수로 정렬해 상위 N개만 취한다.
 const MAX_CANDIDATES_FOR_STAGE2 = 16;
 
+// 취향 카드의 매칭 키워드는 "스터드 장식", "스터드·체인 장식"처럼 여러
+// 단어가 붙은 서술형이 많은데, 카탈로그 소재 키워드는 "스터드"처럼 단일
+// 표기라 완전 일치로는 거의 안 걸린다. 부분 문자열 포함 관계로 넓혀서
+// 잡는다. 그래도 "가죽"↔"레더"처럼 실제 동의어인데 글자가 아예 다른
+// 경우는 부분 일치로도 안 잡혀서 별도 동의어 사전으로 보완한다.
+const KEYWORD_SYNONYMS: Record<string, string[]> = {
+  가죽: ["레더", "양가죽", "카프스킨"],
+};
+
+function keywordsOverlap(tasteKeyword: string, materialKeyword: string): boolean {
+  if (tasteKeyword === materialKeyword) return true;
+  if (tasteKeyword.includes(materialKeyword) || materialKeyword.includes(tasteKeyword)) return true;
+  const synonyms = KEYWORD_SYNONYMS[tasteKeyword];
+  return synonyms?.includes(materialKeyword) ?? false;
+}
+
 export function getCandidateProducts(
   term: TasteTermCard,
   library: TasteLibrary,
@@ -24,7 +40,9 @@ export function getCandidateProducts(
 
   const scored = catalog.map((product) => {
     const shapeHit = exampleShapes.has(product.subcategory) ? 1 : 0;
-    const keywordHits = product.material_keywords.filter((k) => keywords.includes(k)).length;
+    const keywordHits = product.material_keywords.filter((mk) =>
+      keywords.some((tk) => keywordsOverlap(tk, mk)),
+    ).length;
     return { product, relevance: shapeHit + keywordHits };
   });
 
