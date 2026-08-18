@@ -252,7 +252,10 @@ function SuccessResult({
   const otherMatchedTerms = allMatchedTerms.filter((t) => t.term !== matchedTerm.term);
 
   return (
-    <div className="mt-10">
+    <div
+      className="mood-scope mt-10"
+      style={moodColor ? ({ "--c": moodColor } as CSSProperties) : undefined}
+    >
       {usedFallbackRank > 0 && (
         <p className="text-ink-faint mb-6 text-[0.875rem]">
           1순위 취향보다 {RANK_LABELS[usedFallbackRank] ?? `${usedFallbackRank + 1}순위`} 취향에 더
@@ -260,10 +263,7 @@ function SuccessResult({
         </p>
       )}
 
-      <div
-        className="border-hairline mood-scope border-t pt-8"
-        style={moodColor ? ({ "--c": moodColor } as CSSProperties) : undefined}
-      >
+      <div className="border-hairline border-t pt-8">
         <p className="flex flex-wrap items-center gap-2 text-[0.8125rem]">
           <span className="text-ink font-medium">취향 용어</span>
           <span className="text-ink-faint">·</span>
@@ -334,19 +334,31 @@ function SuccessResult({
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {luxuryTerms.map((lt) => {
               const isShape = lt.kind === "shape";
+              // 형태/소재는 항상 뚜렷이 구분돼야 하지만, 취향 용어 쪽보다는
+              // 조용해야 한다 — 그래서 무드 컬러(--c)를 그대로 안 쓰고,
+              // 기존 고정 액센트(형태=블루, 소재=러스트) 쪽으로 각각 55%
+              // 섞어서 "같은 무드에서 갈라진 색"처럼 보이게 한다. 무드
+              // 컬러가 없는 경로(카드 클릭 재검색 등)는 섞을 --c가 없으니
+              // 기존처럼 순수 고정 액센트 그대로 쓴다.
+              const cc = moodColor
+                ? isShape
+                  ? "color-mix(in oklab, var(--c) 55%, var(--color-accent-2) 45%)"
+                  : "color-mix(in oklab, var(--c) 55%, var(--color-accent) 45%)"
+                : isShape
+                  ? "var(--color-accent-2)"
+                  : "var(--color-accent)";
               return (
                 <div
                   key={lt.term}
-                  className={
-                    isShape
-                      ? "border-accent-2/25 bg-accent-2/5 flex flex-col gap-1.5 border p-4"
-                      : "border-accent/25 bg-accent/5 flex flex-col gap-1.5 border p-4"
-                  }
+                  className="flex flex-col gap-1.5 border p-4"
+                  style={{
+                    background: `color-mix(in oklab, ${cc} 4%, var(--color-paper))`,
+                    borderColor: `color-mix(in oklab, ${cc} 18%, var(--color-hairline))`,
+                  }}
                 >
                   <span
-                    className={
-                      isShape ? "text-accent-2 text-[0.6875rem] font-medium" : "text-accent text-[0.6875rem] font-medium"
-                    }
+                    className="text-[0.6875rem] font-medium"
+                    style={{ color: `color-mix(in oklab, ${cc} 55%, var(--color-ink-faint) 45%)` }}
                   >
                     {isShape ? "형태" : "소재"}
                   </span>
