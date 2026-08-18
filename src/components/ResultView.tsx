@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -159,6 +159,47 @@ function TrustBadge({ trustLevel }: { trustLevel: string }) {
   );
 }
 
+// 1단계가 산출한 confidence(0~1)를 그대로 보여준다 — 지어낸 점수가 아니라
+// 모델이 이번 매칭에 대해 실제로 낸 값. 무드 컬러(--ct, 없으면 기본
+// 액센트로 대체)를 배지 글자에만 써서 "이건 AI가 계산한 데이터"라는
+// 신호로 쓴다.
+function ConfidenceBadge({ confidence }: { confidence: number }) {
+  const pct = Math.round(confidence * 100);
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[0.75rem] font-medium"
+      style={{ borderColor: "color-mix(in oklab, var(--ct) 45%, transparent)", color: "var(--ct)" }}
+    >
+      일치도 {pct}%
+    </span>
+  );
+}
+
+// 채움 너비 = confidence 값 그대로(과장하거나 보정하지 않음). 색은 원색
+// (--c) 그대로 쓰고, 옆에 실제 퍼센트 숫자를 항상 같이 보여줘서 바만 보고도
+// 뭘 나타내는지 알 수 있게 한다.
+function ConfidenceBar({ confidence }: { confidence: number }) {
+  const pct = Math.round(confidence * 100);
+  return (
+    <div className="mt-3 flex items-center gap-2">
+      <span className="text-ink-faint text-[0.6875rem]">일치도</span>
+      <div
+        className="bg-hairline h-1 w-40 max-w-full overflow-hidden rounded-full"
+        role="progressbar"
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label="취향 매칭 일치도"
+      >
+        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "var(--c)" }} />
+      </div>
+      <span className="text-[0.75rem] font-semibold tabular-nums" style={{ color: "var(--c)" }}>
+        {pct}%
+      </span>
+    </div>
+  );
+}
+
 function ResultBody({
   query,
   response,
@@ -192,8 +233,18 @@ function SuccessResult({
   response: Extract<TranslateResponse, { status: "success" }>;
   onAdjacentClick: (term: string) => void;
 }) {
-  const { matchedTerm, matchedTermOrigins, luxuryTerms, products, usedFallbackRank, allMatchedTerms } =
-    response;
+  const {
+    matchedTerm,
+    matchedTermOrigins,
+    matchedTermHistory,
+    matchedTermCharacteristics,
+    luxuryTerms,
+    products,
+    usedFallbackRank,
+    allMatchedTerms,
+    moodColor,
+    moodEmoji,
+  } = response;
   // 1단계가 "사랑스러운 무드의 단정한 분위기"처럼 서로 다른 무드를 여러
   // 취향으로 나눠 잡아도, 지금 화면엔 그중 하나(1순위로 성공한 것)만
   // 제품과 함께 보인다 — 나머지 취향은 사라지는 게 아니라 클릭 가능한
@@ -209,19 +260,37 @@ function SuccessResult({
         </p>
       )}
 
-      <div className="border-hairline border-t pt-8">
-        <p className="text-[0.8125rem]">
+      <div
+        className="border-hairline mood-scope border-t pt-8"
+        style={moodColor ? ({ "--c": moodColor } as CSSProperties) : undefined}
+      >
+        <p className="flex flex-wrap items-center gap-2 text-[0.8125rem]">
           <span className="text-ink font-medium">취향 용어</span>
-          <span className="text-ink-faint mx-2">·</span>
+          <span className="text-ink-faint">·</span>
           <TrustBadge trustLevel={matchedTerm.trust_level} />
+          <ConfidenceBadge confidence={matchedTerm.confidence} />
         </p>
-        <h1 className="font-headline text-ink mt-2 text-[1.75rem] font-bold leading-[1.3] sm:text-[2rem]">
+        <h1 className="font-headline text-ink mt-2 text-[2rem] font-bold leading-[1.3] sm:text-[2.25rem]">
           {matchedTerm.term}
         </h1>
-        {matchedTermOrigins[matchedTerm.term] && (
-          <p className="text-ink-soft mt-3 max-w-[560px] text-[1rem] leading-[1.6]">
-            {matchedTermOrigins[matchedTerm.term]}
-          </p>
+        <ConfidenceBar confidence={matchedTerm.confidence} />
+        {(matchedTermHistory ?? matchedTermOrigins[matchedTerm.term]) && (
+          <div className="mt-4 flex max-w-[560px] flex-col gap-3">
+            <div>
+              <p className="text-ink-faint text-[0.75rem]">유래</p>
+              <p className="text-ink/85 mt-1 text-[0.9375rem] leading-[1.6]">
+                {matchedTermHistory ?? matchedTermOrigins[matchedTerm.term]}
+              </p>
+            </div>
+            {matchedTermCharacteristics && (
+              <div>
+                <p className="text-ink-faint text-[0.75rem]">특징</p>
+                <p className="text-ink/85 mt-1 text-[0.9375rem] leading-[1.6]">
+                  {matchedTermCharacteristics}
+                </p>
+              </div>
+            )}
+          </div>
         )}
         {matchedTerm.matching_keywords.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
@@ -236,8 +305,23 @@ function SuccessResult({
           </div>
         )}
 
-        <div className="bg-hairline/20 mt-6 max-w-[560px] p-4">
-          <p className="text-ink-faint text-[0.75rem]">이렇게 판단했어요</p>
+        <div
+          className="mt-6 max-w-[560px] p-4"
+          style={{
+            background: "color-mix(in oklab, var(--c) 9%, var(--color-paper))",
+            borderLeft: "3px solid var(--c)",
+          }}
+        >
+          <div className="flex items-center gap-2">
+            {moodEmoji && (
+              <span aria-hidden="true" className="text-[0.9375rem]">
+                {moodEmoji}
+              </span>
+            )}
+            <p className="text-[0.75rem] font-medium" style={{ color: "var(--ct)" }}>
+              이렇게 판단했어요
+            </p>
+          </div>
           <p className="text-ink-soft mt-1.5 text-[0.875rem] leading-[1.6]">{matchedTerm.reason}</p>
         </div>
       </div>
@@ -247,23 +331,38 @@ function SuccessResult({
           <p className="text-ink-faint text-[0.75rem]">
             패션 용어 {luxuryTerms.length > 1 && `· 이 취향과 연결된 형태·소재 용어 ${luxuryTerms.length}개`}
           </p>
-          <div className="mt-3 flex flex-col gap-4">
-            {luxuryTerms.map((lt) => (
-              <div key={lt.term}>
-                <p className="font-headline text-ink text-[1.125rem] font-bold">{lt.term}</p>
-                <p className="text-ink-soft mt-1 max-w-[560px] text-[0.9375rem] leading-[1.6]">
-                  {lt.origin}
-                </p>
-              </div>
-            ))}
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {luxuryTerms.map((lt) => {
+              const isShape = lt.kind === "shape";
+              return (
+                <div
+                  key={lt.term}
+                  className={
+                    isShape
+                      ? "border-accent-2/25 bg-accent-2/5 flex flex-col gap-1.5 border p-4"
+                      : "border-accent/25 bg-accent/5 flex flex-col gap-1.5 border p-4"
+                  }
+                >
+                  <span
+                    className={
+                      isShape ? "text-accent-2 text-[0.6875rem] font-medium" : "text-accent text-[0.6875rem] font-medium"
+                    }
+                  >
+                    {isShape ? "형태" : "소재"}
+                  </span>
+                  <p className="font-headline text-ink text-[1rem] font-bold leading-[1.3]">
+                    {lt.term}
+                  </p>
+                  <p className="text-ink-soft text-[0.8125rem] leading-[1.5]">{lt.origin}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
 
       <div className="border-hairline mt-8 border-t pt-8">
-        <p className="text-ink-faint text-[0.75rem]">
-          제품 {products.length}개
-        </p>
+        <p className="text-ink-faint text-[0.75rem]">이런 제품은 어때요? · {products.length}개</p>
         <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
           {products.map((product) => (
             <ProductCard key={product.product_name} product={product} />
@@ -333,7 +432,7 @@ function ProductCard({
         {product.product_name}
       </p>
       <p className="text-ink-soft mt-1.5 text-[0.8125rem] leading-[1.5]">{product.match_summary}</p>
-      <p className="text-ink-faint mt-2 text-[0.75rem]">{product.total_score.toFixed(1)}점</p>
+      <p className="text-ink-faint mt-2 text-[0.75rem]">매칭 점수 {product.total_score.toFixed(1)}점</p>
     </a>
   );
 }

@@ -18,7 +18,16 @@ export type TrustLevel = "학술 용어" | "비평 용어" | "통용어";
 export type TasteTermCard = {
   term: string; // 용어명 (영문 포함), 예: "Y2K", "꾸안꾸" (영문 대응 없음)
   trust_level: TrustLevel;
-  origin: string; // 유래
+  // 한 줄 요약 유래 — "이런 무드도 감지했어요"/인접 취향 카드 등 보조
+  // 노출 전용. 메인으로 선정된 취향 용어 화면에는 아래 history/description을
+  // 대신 쓴다(있으면).
+  origin: string;
+  // 아래 둘은 메인으로 선정된 취향 용어 화면 전용 — 유래(역사, 여러 문장)와
+  // 특징(정의)을 분리해서 라벨 달아 보여주기 위함. 웹 검색으로 검증한
+  // 사실만 쓰고, 아직 전체 54개를 다 채우지 못해서 optional — 없으면
+  // 화면에서 origin(한 줄 요약)으로 대체.
+  history?: string;
+  description?: string;
   linked_luxury_terms: string[]; // 연결된 럭셔리 용어 카드의 term (정확히 일치) — 형태 먼저, 소재/기법 나중 순서
   // 유래 설명이 필요 없는 일반 원재료명(레더/나일론/코튼/데님/실크)은
   // 별도 카드를 안 만들고 여기에 직접 적어서 카탈로그 material_keywords와
@@ -69,6 +78,10 @@ export type Stage1Result = {
   no_clear_match: boolean;
   fallback_note?: string;
   suggested_new_term?: SuggestedNewTerm | null;
+  // 검색마다 모델이 그때그때 고르는 "무드" 색(6자리 헥스)·이모지. 라이브러리
+  // 고정값이 아니라 이번 입력에 대한 감성 스냅샷이라 매번 달라질 수 있다.
+  mood_color?: string;
+  mood_emoji?: string;
 };
 
 // --- 카탈로그 / 2단계: 제품 매칭 ---
@@ -134,12 +147,16 @@ export type TranslateSuccess = {
   query: string;
   matchedTerm: MatchedTerm;
   // matchedTerm.reason은 "이번 입력이 왜 이 용어에 연결되는지"에 대한
-  // 1단계의 판단 근거(요청마다 달라짐). origin(용어 자체의 뜻/유래,
-  // 라이브러리 고정값)은 따로 내려줘야 화면에서 이 둘을 구분해서 보여줄
-  // 수 있다 — allMatchedTerms에 있는 다른 취향들("이런 무드도
-  // 감지했어요" 카드)도 각자 origin이 필요해서, term 이름 -> origin
-  // 맵으로 한 번에 내려준다(allMatchedTerms 전체 커버).
+  // 1단계의 판단 근거(요청마다 달라짐). origin(용어 자체의 한 줄 요약
+  // 유래, 라이브러리 고정값)은 따로 내려줘야 화면에서 이 둘을 구분해서
+  // 보여줄 수 있다 — allMatchedTerms에 있는 다른 취향들("이런 무드도
+  // 감지했어요" 카드)도 각자 필요해서, term 이름 -> origin 맵으로 한
+  // 번에 내려준다(allMatchedTerms 전체 커버).
   matchedTermOrigins: Record<string, string>;
+  // 메인으로 선정된 matchedTerm 전용 상세 유래/특징 — 라이브러리 카드에
+  // history/description이 있을 때만 채워짐(둘 다 optional).
+  matchedTermHistory?: string;
+  matchedTermCharacteristics?: string;
   usedFallbackRank: number; // 0 = 1순위에서 성공, 1 = 2순위, ...
   // 취향 카드 하나가 형태·소재 럭셔리 용어 여러 개에 연결될 수 있어서
   // (예: 록 패션 -> 메신저 백/벨트백(형태) + 스터드/체인(소재)), 대표
@@ -147,6 +164,11 @@ export type TranslateSuccess = {
   luxuryTerms: LuxuryTermCard[];
   products: EnrichedRecommendedProduct[];
   allMatchedTerms: MatchedTerm[];
+  // 이번 검색의 "무드" 색·이모지 — 1단계가 그때그때 고른 값(라이브러리
+  // 고정값 아님). retryWithTerm처럼 1단계를 다시 안 부르는 경로에서는
+  // 없을 수 있어 optional — 화면에서는 없으면 기본 액센트 색으로 대체.
+  moodColor?: string;
+  moodEmoji?: string;
 };
 
 export type TranslateAdjacentFallback = {

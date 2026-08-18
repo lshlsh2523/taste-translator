@@ -47,6 +47,11 @@ export function buildStage1Prompt(userInput: string, library: TasteLibrary): str
     각각 matched_terms에 넣으세요. "러블리 캐주얼"처럼 정확한 유래·학명이
     확인되지 않는 마케팅 조어는 라이브러리에 카드로 없으니, 새 용어를
     지어내는 대신 이미 검증된 카드 여러 개를 조합해서 표현하세요.
+14. matched_terms 중 confidence가 가장 높은 용어를 기준으로, 그 취향의
+    무드에 어울리는 색상 하나(mood_color, 6자리 헥스코드)와 이모지 하나
+    (mood_emoji)를 함께 고르세요. 색은 아이보리색 배경(#f6f1e8) 위에서
+    봤을 때 뚜렷이 구분되는 톤으로 고르세요 — 채도·명도가 너무 낮은
+    파스텔톤이나 흰색에 가까운 색은 피하세요.
 
 
 # 출력 형식 (JSON)
@@ -62,7 +67,9 @@ export function buildStage1Prompt(userInput: string, library: TasteLibrary): str
   ],
   "no_clear_match": false,
   "fallback_note": "명확한 매칭이 없을 때만 채움",
-  "suggested_new_term": null
+  "suggested_new_term": null,
+  "mood_color": "#7a2e2e",
+  "mood_emoji": "⛓️"
 }
 
 <취향_용어_라이브러리>

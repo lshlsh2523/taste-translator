@@ -24,6 +24,13 @@ import type {
 
 const normalize = (s: string) => s.trim().toLowerCase();
 
+// 모델이 형식에 안 맞는 값(예: "red", "#ff0" 3자리)을 줄 수 있어 6자리
+// 헥스코드인지만 확인한다 — 안 맞으면 undefined로 떨어뜨려 화면에서
+// 기본 액센트 색으로 대체되게 한다(깨진 CSS 값이 그대로 안 들어가게).
+function sanitizeMoodColor(color: string | undefined): string | undefined {
+  return color && /^#[0-9a-fA-F]{6}$/.test(color) ? color : undefined;
+}
+
 function buildOriginMap(terms: MatchedTerm[], library: TasteLibrary): Record<string, string> {
   const map: Record<string, string> = {};
   for (const t of terms) {
@@ -132,10 +139,14 @@ export async function orchestrateTranslate(
         query,
         matchedTerm,
         matchedTermOrigins: buildOriginMap(sortedTerms, library),
+        matchedTermHistory: tasteTermCard?.history,
+        matchedTermCharacteristics: tasteTermCard?.description,
         usedFallbackRank: i,
         luxuryTerms: tasteTermCard ? resolveLinkedLuxuryTerms(tasteTermCard, library) : [],
         products: result.products,
         allMatchedTerms: sortedTerms,
+        moodColor: sanitizeMoodColor(stage1Result.mood_color),
+        moodEmoji: stage1Result.mood_emoji,
       };
     }
   }
@@ -190,6 +201,8 @@ export async function retryWithTerm(
       query: termName,
       matchedTerm: syntheticMatchedTerm,
       matchedTermOrigins: { [tasteTermCard.term]: tasteTermCard.origin },
+      matchedTermHistory: tasteTermCard.history,
+      matchedTermCharacteristics: tasteTermCard.description,
       usedFallbackRank: 0,
       luxuryTerms: resolveLinkedLuxuryTerms(tasteTermCard, library),
       products: result.products,

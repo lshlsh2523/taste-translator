@@ -35,6 +35,11 @@ const STAGE1_SCHEMA = {
       properties: { description: { type: "string" } },
       required: ["description"],
     },
+    // 검색마다 달라지는 "무드" 색/이모지 — matched_terms 1순위 기준으로
+    // 모델이 그때그때 고른다(라이브러리 고정값 아님). matched_terms가
+    // 비어있을 때(no_clear_match)는 생략될 수 있어 required에서 뺐다.
+    mood_color: { type: "string" },
+    mood_emoji: { type: "string" },
   },
   required: ["matched_terms", "no_clear_match"],
 } as const;

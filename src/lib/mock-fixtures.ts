@@ -24,6 +24,11 @@ const MOCK_SUCCESS: Extract<TranslateResponse, { status: "success" }> = {
     "펑크 룩 (Punk)": "1970년대 펑크 록 문화에서 파생, DIY 정신과 반항적 디테일이 특징",
     "메탈 룩 (Metal Look)": "헤비메탈 음악 문화, 타투 그래픽, 록밴드 스타일을 강조하는 다크하고 반항적인 스타일",
   },
+  matchedTermHistory:
+    "오토바이용 가죽 재킷 '페르펙토(Perfecto)'는 1953년 영화 위험한 질주에서 말론 브란도가 입으며 반항적 청년문화의 상징이 됐다. 이 이미지를 1970년대 라몬즈 등 펑크·록 밴드가 무대 의상으로 차용했고, 블론디·조앤 제트 등 여성 록스타들이 스터드·체인 장식을 더하면서 지금의 록 패션 스타일이 완성됐다.",
+  matchedTermCharacteristics: "블랙 가죽 재킷, 스터드, 체인, 두꺼운 벨트 등 금속 하드웨어가 핵심이며 거칠고 반항적인 무드를 표현",
+  moodColor: "#7a2e2e",
+  moodEmoji: "⛓️",
   usedFallbackRank: 0,
   luxuryTerms: [
     {
