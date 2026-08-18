@@ -647,13 +647,13 @@ export function findLuxuryTermByName(
   return library.luxuryTerms.find((l) => l.term === name) ?? null;
 }
 
-// 대표 럭셔리 용어 카드 1개를 뽑는다 (화면 표시 전용, 형태 검색 범위를
-// 좁히는 필터로는 쓰지 않는다). linked_luxury_terms는 형태를 먼저 적는
-// 순서로 관리하므로, 첫 번째 항목이 곧 대표 형태 용어가 된다.
-export function pickRepresentativeLuxuryTerm(
+// 취향 카드에 연결된 럭셔리 용어 카드를 전부 반환한다 (화면 표시용 —
+// 형태 검색 범위를 좁히는 필터로는 쓰지 않는다). 카드 하나가 형태+소재
+// 여러 개에 연결될 수 있어서 대표 1개만 뽑지 않고 전부 보여준다.
+// linked_luxury_terms는 형태를 먼저 적는 순서로 관리한다.
+export function resolveLinkedLuxuryTerms(
   term: TasteTermCard,
   library: TasteLibrary = tasteLibrary,
-): LuxuryTermCard | null {
-  const [first] = term.linked_luxury_terms;
-  return first ? findLuxuryTermByName(first, library) : null;
+): LuxuryTermCard[] {
+  return linkedLuxuryCards(term, library);
 }

@@ -12,7 +12,7 @@
 import { findAdjacentTerms } from "@/lib/adjacent-terms";
 import { getCandidateProducts } from "@/lib/catalog";
 import { callStage1, callStage2 } from "@/lib/stages";
-import { pickRepresentativeLuxuryTerm, resolveMaterialSignals } from "@/data/taste-library";
+import { resolveLinkedLuxuryTerms, resolveMaterialSignals } from "@/data/taste-library";
 import type {
   CandidateProduct,
   EnrichedRecommendedProduct,
@@ -23,6 +23,15 @@ import type {
 } from "@/types/taste";
 
 const normalize = (s: string) => s.trim().toLowerCase();
+
+function buildOriginMap(terms: MatchedTerm[], library: TasteLibrary): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const t of terms) {
+    const card = library.tasteTerms.find((c) => c.term === t.term);
+    if (card) map[t.term] = card.origin;
+  }
+  return map;
+}
 
 // 2단계 모델은 product_name만 돌려준다 — 이미지/실제 상품 링크는 우리가
 // candidate_products로 이미 넘겨준 카탈로그 원본에서 그대로 붙여준다.
@@ -122,9 +131,9 @@ export async function orchestrateTranslate(
         status: "success",
         query,
         matchedTerm,
-        matchedTermOrigin: tasteTermCard?.origin ?? "",
+        matchedTermOrigins: buildOriginMap(sortedTerms, library),
         usedFallbackRank: i,
-        luxuryTerm: tasteTermCard ? pickRepresentativeLuxuryTerm(tasteTermCard, library) : null,
+        luxuryTerms: tasteTermCard ? resolveLinkedLuxuryTerms(tasteTermCard, library) : [],
         products: result.products,
         allMatchedTerms: sortedTerms,
       };
@@ -180,9 +189,9 @@ export async function retryWithTerm(
       status: "success",
       query: termName,
       matchedTerm: syntheticMatchedTerm,
-      matchedTermOrigin: tasteTermCard.origin,
+      matchedTermOrigins: { [tasteTermCard.term]: tasteTermCard.origin },
       usedFallbackRank: 0,
-      luxuryTerm: pickRepresentativeLuxuryTerm(tasteTermCard, library),
+      luxuryTerms: resolveLinkedLuxuryTerms(tasteTermCard, library),
       products: result.products,
       allMatchedTerms: [syntheticMatchedTerm],
     };

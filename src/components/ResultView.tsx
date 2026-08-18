@@ -192,7 +192,7 @@ function SuccessResult({
   response: Extract<TranslateResponse, { status: "success" }>;
   onAdjacentClick: (term: string) => void;
 }) {
-  const { matchedTerm, matchedTermOrigin, luxuryTerm, products, usedFallbackRank, allMatchedTerms } =
+  const { matchedTerm, matchedTermOrigins, luxuryTerms, products, usedFallbackRank, allMatchedTerms } =
     response;
   // 1단계가 "사랑스러운 무드의 단정한 분위기"처럼 서로 다른 무드를 여러
   // 취향으로 나눠 잡아도, 지금 화면엔 그중 하나(1순위로 성공한 것)만
@@ -218,9 +218,9 @@ function SuccessResult({
         <h1 className="font-headline text-ink mt-2 text-[1.75rem] font-bold leading-[1.3] sm:text-[2rem]">
           {matchedTerm.term}
         </h1>
-        {matchedTermOrigin && (
+        {matchedTermOrigins[matchedTerm.term] && (
           <p className="text-ink-soft mt-3 max-w-[560px] text-[1rem] leading-[1.6]">
-            {matchedTermOrigin}
+            {matchedTermOrigins[matchedTerm.term]}
           </p>
         )}
         {matchedTerm.matching_keywords.length > 0 && (
@@ -242,13 +242,21 @@ function SuccessResult({
         </div>
       </div>
 
-      {luxuryTerm && (
+      {luxuryTerms.length > 0 && (
         <div className="border-hairline mt-8 border-t pt-8">
-          <p className="text-ink-faint text-[0.75rem]">전문 용어</p>
-          <p className="font-headline text-ink mt-1.5 text-[1.25rem] font-bold">{luxuryTerm.term}</p>
-          <p className="text-ink-soft mt-2 max-w-[560px] text-[0.9375rem] leading-[1.6]">
-            {luxuryTerm.origin}
+          <p className="text-ink-faint text-[0.75rem]">
+            패션 용어 {luxuryTerms.length > 1 && `· 이 취향과 연결된 형태·소재 용어 ${luxuryTerms.length}개`}
           </p>
+          <div className="mt-3 flex flex-col gap-4">
+            {luxuryTerms.map((lt) => (
+              <div key={lt.term}>
+                <p className="font-headline text-ink text-[1.125rem] font-bold">{lt.term}</p>
+                <p className="text-ink-soft mt-1 max-w-[560px] text-[0.9375rem] leading-[1.6]">
+                  {lt.origin}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -275,7 +283,12 @@ function SuccessResult({
                 className="border-hairline hover:border-ink text-left transition-colors border p-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
               >
                 <p className="text-ink font-headline text-[1rem] font-bold">{term.term}</p>
-                <p className="text-ink-soft mt-1 text-[0.8125rem] leading-[1.5]">{term.reason}</p>
+                {matchedTermOrigins[term.term] && (
+                  <p className="text-ink-soft mt-1 text-[0.8125rem] leading-[1.5]">
+                    {matchedTermOrigins[term.term]}
+                  </p>
+                )}
+                <p className="text-ink-faint mt-1.5 text-[0.75rem] leading-[1.5]">{term.reason}</p>
               </button>
             ))}
           </div>
@@ -346,7 +359,8 @@ function AdjacentFallbackResult({
             className="border-hairline hover:border-ink text-left transition-colors border p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           >
             <p className="text-ink font-headline text-[1.125rem] font-bold">{card.term}</p>
-            <p className="text-ink-soft mt-1.5 text-[0.8125rem]">
+            <p className="text-ink-soft mt-1.5 text-[0.8125rem] leading-[1.5]">{card.origin}</p>
+            <p className="text-ink-faint mt-1.5 text-[0.75rem]">
               겹치는 럭셔리 용어: {card.shared_luxury_terms.join(", ")}
             </p>
           </button>

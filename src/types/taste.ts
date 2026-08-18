@@ -124,6 +124,7 @@ export type EnrichedRecommendedProduct = RecommendedProduct & {
 export type AdjacentTasteCard = {
   term: string;
   trust_level: TrustLevel;
+  origin: string; // 이 취향 용어 자체의 뜻/유래 (라이브러리 고정값)
   linked_luxury_terms: string[];
   shared_luxury_terms: string[]; // 실패한 matched_terms와 겹치는 럭셔리 용어(형태/소재)
 };
@@ -133,12 +134,17 @@ export type TranslateSuccess = {
   query: string;
   matchedTerm: MatchedTerm;
   // matchedTerm.reason은 "이번 입력이 왜 이 용어에 연결되는지"에 대한
-  // 1단계의 판단 근거(요청마다 달라짐). matchedTermOrigin은 그 용어
-  // 자체의 뜻/유래(라이브러리 고정값) — 화면에서 이 둘을 구분해서
-  // 보여주기 위해 따로 내려준다.
-  matchedTermOrigin: string;
+  // 1단계의 판단 근거(요청마다 달라짐). origin(용어 자체의 뜻/유래,
+  // 라이브러리 고정값)은 따로 내려줘야 화면에서 이 둘을 구분해서 보여줄
+  // 수 있다 — allMatchedTerms에 있는 다른 취향들("이런 무드도
+  // 감지했어요" 카드)도 각자 origin이 필요해서, term 이름 -> origin
+  // 맵으로 한 번에 내려준다(allMatchedTerms 전체 커버).
+  matchedTermOrigins: Record<string, string>;
   usedFallbackRank: number; // 0 = 1순위에서 성공, 1 = 2순위, ...
-  luxuryTerm: LuxuryTermCard | null;
+  // 취향 카드 하나가 형태·소재 럭셔리 용어 여러 개에 연결될 수 있어서
+  // (예: 록 패션 -> 메신저 백/벨트백(형태) + 스터드/체인(소재)), 대표
+  // 하나만 고르지 않고 연결된 것 전부 내려준다.
+  luxuryTerms: LuxuryTermCard[];
   products: EnrichedRecommendedProduct[];
   allMatchedTerms: MatchedTerm[];
 };

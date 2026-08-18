@@ -45,6 +45,7 @@ export function findAdjacentTerms(
   return scored.slice(0, limit).map(({ card, shared }) => ({
     term: card.term,
     trust_level: card.trust_level,
+    origin: card.origin,
     linked_luxury_terms: card.linked_luxury_terms,
     shared_luxury_terms: shared,
   }));

@@ -19,15 +19,42 @@ const MOCK_SUCCESS: Extract<TranslateResponse, { status: "success" }> = {
     matching_keywords: ["가죽", "스터드", "록"],
     confidence: 0.95,
   },
-  matchedTermOrigin: "록 음악 문화에서 파생, 가죽 재킷과 스터드 장식이 특징",
-  usedFallbackRank: 0,
-  luxuryTerm: {
-    term: "메신저 백 (Messenger Bag)",
-    origin: "자전거 배달원(bike messenger)이 편하게 매던 크로스바디 형태에서 유래",
-    kind: "shape",
-    matching_mood: ["실용적", "캐주얼"],
-    mcm_subcategory: ["크로스백"],
+  matchedTermOrigins: {
+    "록 패션 (Rock Fashion)": "록 음악 문화에서 파생, 가죽 재킷과 스터드 장식이 특징",
+    "펑크 룩 (Punk)": "1970년대 펑크 록 문화에서 파생, DIY 정신과 반항적 디테일이 특징",
+    "메탈 룩 (Metal Look)": "헤비메탈 음악 문화, 타투 그래픽, 록밴드 스타일을 강조하는 다크하고 반항적인 스타일",
   },
+  usedFallbackRank: 0,
+  luxuryTerms: [
+    {
+      term: "메신저 백 (Messenger Bag)",
+      origin: "자전거 배달원(bike messenger)이 편하게 매던 크로스바디 형태에서 유래",
+      kind: "shape",
+      matching_mood: ["실용적", "캐주얼"],
+      mcm_subcategory: ["크로스백"],
+    },
+    {
+      term: "벨트백 (Belt Bag)",
+      origin: "허리에 두르는 형태, 1980~90년대 힙합·스트리트 신에서 유행하며 대중화",
+      kind: "shape",
+      matching_mood: ["스트리트", "캐주얼", "실용적"],
+      mcm_subcategory: ["벨트백"],
+    },
+    {
+      term: "스터드",
+      origin: "오토바이 재킷·펑크록 문화에서 온 금속 돌기 장식",
+      kind: "material",
+      matching_mood: ["반항적", "스트리트"],
+      material_keywords: ["스터드"],
+    },
+    {
+      term: "체인",
+      origin: "금속 고리를 엮은 체인 하드웨어, 가방 스트랩이나 장식으로 사용",
+      kind: "material",
+      matching_mood: ["스트리트", "반항적"],
+      material_keywords: ["체인"],
+    },
+  ],
   products: [
     {
       product_name: "stark 갤러틱 갈라 양가죽 백팩",
@@ -126,12 +153,14 @@ const MOCK_ADJACENT: Extract<TranslateResponse, { status: "adjacent_fallback" }>
     {
       term: "올드머니 룩 (Old Money)",
       trust_level: "통용어",
+      origin: "대대로 부유한 상류층의 절제되고 클래식한 옷차림을 지칭",
       linked_luxury_terms: ["탑 핸들 백 (Top Handle Bag)", "쇼퍼 & 토트 백 (Shopper & Tote)", "헤링본"],
       shared_luxury_terms: ["탑 핸들 백 (Top Handle Bag)", "헤링본"],
     },
     {
       term: "미니멀룩 (Minimalism)",
       trust_level: "통용어",
+      origin: "장식을 절제하고 실루엣과 소재감으로 승부하는 스타일",
       linked_luxury_terms: ["탑 핸들 백 (Top Handle Bag)", "사첼 백 (Satchel)"],
       shared_luxury_terms: ["탑 핸들 백 (Top Handle Bag)"],
     },
