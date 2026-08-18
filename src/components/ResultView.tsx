@@ -61,6 +61,23 @@ export function ResultView() {
     }
   };
 
+  // 일시적 에러(과부하 등) 재시도를 자동으로 하지 않기로 했으니(할당량
+  // 아끼려고), 실패하면 사용자가 이 버튼으로 직접 같은 검색어를 다시
+  // 보낸다 — /search로 돌아가서 다시 타이핑할 필요 없게 같은 query로
+  // 바로 재요청.
+  const handleRetry = () => {
+    if (!query) return;
+    setState({ status: "loading" });
+    fetchTranslate(query)
+      .then((response) => {
+        storeResult(query, response);
+        setState({ status: "loaded", query, response });
+      })
+      .catch(() => {
+        setState({ status: "error", message: "지금은 연결이 어려워요. 잠시 후 다시 시도해주세요." });
+      });
+  };
+
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-[880px] flex-col px-6 pt-6 pb-16 sm:px-10 lg:px-16">
       <div>
@@ -75,7 +92,9 @@ export function ResultView() {
 
       <div className="mt-10 flex flex-1 flex-col">
         {state.status === "loading" && <LoadingState />}
-        {state.status === "error" && <ErrorState message={state.message} />}
+        {state.status === "error" && (
+          <ErrorState message={state.message} onRetry={query ? handleRetry : undefined} />
+        )}
         {state.status === "loaded" && (
           <ResultBody
             query={state.query}
@@ -96,16 +115,26 @@ function LoadingState() {
   );
 }
 
-function ErrorState({ message }: { message: string }) {
+function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 py-24 text-center">
       <p className="text-ink text-[1.0625rem]">{message}</p>
-      <Link
-        href="/search"
-        className="bg-ink text-paper hover:bg-transparent hover:text-ink focus-visible:outline-ink rounded-full px-7 py-3.5 text-[1rem] transition-colors duration-200 hover:outline hover:outline-1 hover:outline-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-      >
-        다시 검색하기
-      </Link>
+      {onRetry ? (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="bg-ink text-paper hover:bg-transparent hover:text-ink focus-visible:outline-ink rounded-full px-7 py-3.5 text-[1rem] transition-colors duration-200 hover:outline hover:outline-1 hover:outline-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          같은 검색어로 다시 시도
+        </button>
+      ) : (
+        <Link
+          href="/search"
+          className="bg-ink text-paper hover:bg-transparent hover:text-ink focus-visible:outline-ink rounded-full px-7 py-3.5 text-[1rem] transition-colors duration-200 hover:outline hover:outline-1 hover:outline-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          다시 검색하기
+        </Link>
+      )}
     </div>
   );
 }

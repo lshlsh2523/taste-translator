@@ -1,4 +1,4 @@
-import { fetchImageAsInlineData, getGeminiClient, STAGE_MODEL, withTransientRetry } from "@/lib/gemini";
+import { fetchImageAsInlineData, getGeminiClient, STAGE_MODEL } from "@/lib/gemini";
 import { buildStage1Prompt, buildStage2Prompt } from "@/lib/prompts";
 import type {
   CandidateProduct,
@@ -81,16 +81,14 @@ const STAGE2_SCHEMA = {
 
 export async function callStage1(userInput: string, library: TasteLibrary): Promise<Stage1Result> {
   const client = getGeminiClient();
-  const response = await withTransientRetry(() =>
-    client.models.generateContent({
-      model: STAGE_MODEL,
-      contents: buildStage1Prompt(userInput, library),
-      config: {
-        responseMimeType: "application/json",
-        responseJsonSchema: STAGE1_SCHEMA,
-      },
-    }),
-  );
+  const response = await client.models.generateContent({
+    model: STAGE_MODEL,
+    contents: buildStage1Prompt(userInput, library),
+    config: {
+      responseMimeType: "application/json",
+      responseJsonSchema: STAGE1_SCHEMA,
+    },
+  });
   if (!response.text) {
     throw new Error("1단계 모델 응답이 비어있습니다.");
   }
@@ -132,16 +130,14 @@ export async function callStage2(
     parts.push({ inlineData: inline });
   }
 
-  const response = await withTransientRetry(() =>
-    client.models.generateContent({
-      model: STAGE_MODEL,
-      contents: [{ role: "user", parts }],
-      config: {
-        responseMimeType: "application/json",
-        responseJsonSchema: STAGE2_SCHEMA,
-      },
-    }),
-  );
+  const response = await client.models.generateContent({
+    model: STAGE_MODEL,
+    contents: [{ role: "user", parts }],
+    config: {
+      responseMimeType: "application/json",
+      responseJsonSchema: STAGE2_SCHEMA,
+    },
+  });
   if (!response.text) {
     throw new Error("2단계 모델 응답이 비어있습니다.");
   }
