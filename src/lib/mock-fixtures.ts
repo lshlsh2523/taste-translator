@@ -19,6 +19,7 @@ const MOCK_SUCCESS: Extract<TranslateResponse, { status: "success" }> = {
     matching_keywords: ["가죽", "스터드", "록"],
     confidence: 0.95,
   },
+  matchedTermOrigin: "록 음악 문화에서 파생, 가죽 재킷과 스터드 장식이 특징",
   usedFallbackRank: 0,
   luxuryTerm: {
     term: "메신저 백 (Messenger Bag)",

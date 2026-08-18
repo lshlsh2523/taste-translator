@@ -132,6 +132,11 @@ export type TranslateSuccess = {
   status: "success";
   query: string;
   matchedTerm: MatchedTerm;
+  // matchedTerm.reason은 "이번 입력이 왜 이 용어에 연결되는지"에 대한
+  // 1단계의 판단 근거(요청마다 달라짐). matchedTermOrigin은 그 용어
+  // 자체의 뜻/유래(라이브러리 고정값) — 화면에서 이 둘을 구분해서
+  // 보여주기 위해 따로 내려준다.
+  matchedTermOrigin: string;
   usedFallbackRank: number; // 0 = 1순위에서 성공, 1 = 2순위, ...
   luxuryTerm: LuxuryTermCard | null;
   products: EnrichedRecommendedProduct[];

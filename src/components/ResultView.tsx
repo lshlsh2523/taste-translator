@@ -192,7 +192,8 @@ function SuccessResult({
   response: Extract<TranslateResponse, { status: "success" }>;
   onAdjacentClick: (term: string) => void;
 }) {
-  const { matchedTerm, luxuryTerm, products, usedFallbackRank, allMatchedTerms } = response;
+  const { matchedTerm, matchedTermOrigin, luxuryTerm, products, usedFallbackRank, allMatchedTerms } =
+    response;
   // 1단계가 "사랑스러운 무드의 단정한 분위기"처럼 서로 다른 무드를 여러
   // 취향으로 나눠 잡아도, 지금 화면엔 그중 하나(1순위로 성공한 것)만
   // 제품과 함께 보인다 — 나머지 취향은 사라지는 게 아니라 클릭 가능한
@@ -217,9 +218,11 @@ function SuccessResult({
         <h1 className="font-headline text-ink mt-2 text-[1.75rem] font-bold leading-[1.3] sm:text-[2rem]">
           {matchedTerm.term}
         </h1>
-        <p className="text-ink-soft mt-3 max-w-[560px] text-[1rem] leading-[1.6]">
-          {matchedTerm.reason}
-        </p>
+        {matchedTermOrigin && (
+          <p className="text-ink-soft mt-3 max-w-[560px] text-[1rem] leading-[1.6]">
+            {matchedTermOrigin}
+          </p>
+        )}
         {matchedTerm.matching_keywords.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
             {matchedTerm.matching_keywords.map((kw) => (
@@ -232,6 +235,11 @@ function SuccessResult({
             ))}
           </div>
         )}
+
+        <div className="bg-hairline/20 mt-6 max-w-[560px] p-4">
+          <p className="text-ink-faint text-[0.75rem]">이렇게 판단했어요</p>
+          <p className="text-ink-soft mt-1.5 text-[0.875rem] leading-[1.6]">{matchedTerm.reason}</p>
+        </div>
       </div>
 
       {luxuryTerm && (
