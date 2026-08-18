@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { orchestrateTranslate, retryWithTerm } from "@/lib/orchestrate";
 import { tasteLibrary } from "@/data/taste-library";
+import { getMockResponse, getMockRetryResponse, isMockEnabled } from "@/lib/mock-fixtures";
 import type { TranslateResponse } from "@/types/taste";
 
 export async function POST(request: Request) {
@@ -16,11 +17,17 @@ export async function POST(request: Request) {
       // originalQuery: 직전 검색의 원문 문장 — 2단계 색상 신호 판단용으로
       // 넘겨준다 (없어도 동작함, 색상 판단 정확도만 떨어짐).
       const originalQuery = typeof body.originalQuery === "string" ? body.originalQuery : undefined;
+      if (isMockEnabled()) {
+        return NextResponse.json<TranslateResponse>(getMockRetryResponse(body.term.trim()));
+      }
       const result = await retryWithTerm(body.term.trim(), tasteLibrary, originalQuery);
       return NextResponse.json<TranslateResponse>(result);
     }
 
     if (typeof body.query === "string" && body.query.trim()) {
+      if (isMockEnabled()) {
+        return NextResponse.json<TranslateResponse>(getMockResponse(body.query.trim()));
+      }
       const result = await orchestrateTranslate(body.query.trim(), tasteLibrary);
       return NextResponse.json<TranslateResponse>(result);
     }

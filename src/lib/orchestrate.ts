@@ -58,10 +58,17 @@ function enrichProducts(
 
 // 2단계는 이미지를 직접 보고 채점하는 만큼, 같은 입력이어도 점수가
 // 임계값 바로 근처에서 실행마다 조금씩 달라질 수 있다(실측: 같은 취향·
-// 같은 후보로도 성공/실패가 갈리는 걸 확인함). 그래서 한 취향을 다음
-// 순위로 넘기기 전에 한 번 더 재시도한다 — 진짜로 안 맞는 취향과, 채점
-// 변동성 때문에 우연히 실패한 취향을 구분하기 위함.
-const STAGE2_RETRIES = 1;
+// 같은 후보로도 성공/실패가 갈리는 걸 확인함) — 원래는 이걸 보완하려고
+// 재시도를 1번 넣었었다. 근데 무료 티어 하루 한도(20회)가 너무 빠듯해서
+// (검색 1번이 최악의 경우 하루 치를 다 쓸 수 있었음, 실제로 겪음) 지금은
+// 0으로 낮춰뒀다 — 안정성보다 할당량 절약이 급한 상황이라. 여유 생기면
+// 다시 1로 올리는 걸 고려.
+const STAGE2_RETRIES = 0;
+
+// matched_terms는 1단계가 2~3개를 주지만, 실패할 때마다 순서대로 다
+// 시도하면 그만큼 호출이 쌓인다. 최대 2개까지만 시도하고 그래도 안
+// 되면 인접 취향 폴백으로 넘어간다 — 할당량 절약을 위한 조정.
+const MAX_TERMS_TO_TRY = 2;
 
 async function tryMatchedTerm(
   matchedTerm: MatchedTerm,
@@ -104,8 +111,9 @@ export async function orchestrateTranslate(
   }
 
   const sortedTerms = [...stage1Result.matched_terms].sort((a, b) => b.confidence - a.confidence);
+  const termsToTry = sortedTerms.slice(0, MAX_TERMS_TO_TRY);
 
-  for (let i = 0; i < sortedTerms.length; i++) {
+  for (let i = 0; i < termsToTry.length; i++) {
     const matchedTerm = sortedTerms[i];
     const result = await tryMatchedTerm(matchedTerm, library, query);
     if (result.success) {
