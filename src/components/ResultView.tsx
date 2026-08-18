@@ -22,21 +22,33 @@ const RANK_LABELS = ["1순위", "2순위", "3순위", "4순위", "5순위"];
 export function ResultView() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") ?? "";
-  const [state, setState] = useState<ViewState>(() => {
-    if (!query) return { status: "error", message: "검색어가 없어요." };
-    const stored = readStoredResult(query);
-    return stored ? { status: "loaded", query, response: stored } : { status: "loading" };
-  });
+  // sessionStorage는 브라우저에만 있어서, 초기 렌더에서 바로 읽으면
+  // 서버가 그린 화면(항상 "로딩 중")과 브라우저가 그린 화면(저장된 결과
+  // 있으면 바로 결과)이 달라져서 hydration 에러가 났다 — 초기 상태는
+  // 서버·클라이언트 항상 똑같이 두고, sessionStorage 확인은 마운트 이후
+  // effect 안에서만 한다.
+  const [state, setState] = useState<ViewState>(() =>
+    query ? { status: "loading" } : { status: "error", message: "검색어가 없어요." },
+  );
 
   useEffect(() => {
     if (!query) return;
-    if (readStoredResult(query)) return;
     let cancelled = false;
-    fetchTranslate(query)
-      .then((response) => {
-        if (cancelled) return;
-        storeResult(query, response);
-        setState({ status: "loaded", query, response });
+    // sessionStorage 확인도 fetch와 같은 비동기 흐름 안에 둔다 (effect
+    // 본문에서 곧바로 setState하지 않도록 — react-hooks 린트 규칙).
+    Promise.resolve()
+      .then(() => readStoredResult(query))
+      .then((stored) => {
+        if (cancelled) return undefined;
+        if (stored) {
+          setState({ status: "loaded", query, response: stored });
+          return undefined;
+        }
+        return fetchTranslate(query).then((response) => {
+          if (cancelled) return;
+          storeResult(query, response);
+          setState({ status: "loaded", query, response });
+        });
       })
       .catch(() => {
         if (cancelled) return;
