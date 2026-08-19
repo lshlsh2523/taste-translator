@@ -404,17 +404,17 @@ function SuccessResult({
         </h1>
         {!matchedTermIsSynthetic && <ConfidenceBar confidence={matchedTerm.confidence} />}
         {(matchedTermHistory ?? matchedTermOrigins[matchedTerm.term]) && (
-          <div className="mt-4 flex max-w-[560px] flex-col gap-3">
+          <div className="mt-8 flex flex-col gap-4">
             <div>
-              <p className="text-ink-faint text-[0.75rem]">유래</p>
-              <p className="text-ink/85 mt-1 text-[0.9375rem] leading-[1.6]">
+              <p className="text-ink text-[0.8125rem] font-semibold tracking-wide">유래</p>
+              <p className="text-ink/85 mt-1.5 max-w-[720px] text-[0.9375rem] leading-[1.6]">
                 {matchedTermHistory ?? matchedTermOrigins[matchedTerm.term]}
               </p>
             </div>
             {matchedTermCharacteristics && (
               <div>
-                <p className="text-ink-faint text-[0.75rem]">특징</p>
-                <p className="text-ink/85 mt-1 text-[0.9375rem] leading-[1.6]">
+                <p className="text-ink text-[0.8125rem] font-semibold tracking-wide">특징</p>
+                <p className="text-ink/85 mt-1.5 max-w-[720px] text-[0.9375rem] leading-[1.6]">
                   {matchedTermCharacteristics}
                 </p>
               </div>

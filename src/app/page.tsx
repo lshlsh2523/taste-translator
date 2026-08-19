@@ -46,7 +46,7 @@ export default function Home() {
           이 서비스는 MCM 공식 서비스가 아니며, 학생 프로젝트로 제작되었습니다.
         </p>
         <p className="text-ink-faint mt-2 text-center text-[0.8125rem] leading-normal lg:mt-0 lg:text-right">
-          이 사이트는 PC 환경, 배율 100% 기준으로 최적화되어 있습니다.
+          이 사이트는 PC 전체화면, 배율 100% 기준으로 최적화되어 있습니다.
         </p>
       </footer>
     </div>
