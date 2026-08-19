@@ -167,7 +167,7 @@ export function ResultView() {
       </div>
 
       <div className="mt-10 flex flex-1 flex-col">
-        {state.status === "loading" && <LoadingState />}
+        {state.status === "loading" && <LoadingState query={query} />}
         {state.status === "error" && (
           <ErrorState message={state.message} onRetry={query ? handleRetry : undefined} />
         )}
@@ -187,10 +187,56 @@ export function ResultView() {
   );
 }
 
-function LoadingState() {
+// 실제 결과 화면(SuccessResult)과 같은 자리에 회색 스켈레톤 블록을
+// 그려둔다 — "곧 이런 모양이 뜰 거예요"를 미리 보여주는 방식. 인용구는
+// 이미 아는 정보(URL의 원래 검색어)라 스켈레톤 없이 그대로 보여준다.
+function LoadingState({ query }: { query: string }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-4 py-24">
-      <p className="text-ink-soft text-[1.0625rem]">취향을 다시 불러오는 중이에요</p>
+    <div>
+      <p className="font-headline text-ink-soft max-w-[560px] text-[1.0625rem] italic leading-[1.6] sm:text-[1.1875rem]">
+        &ldquo;{query}&rdquo;
+      </p>
+
+      <div className="border-hairline mt-10 border-t pt-8">
+        <div className="flex gap-2">
+          <div className="skeleton h-6 w-16 rounded-full" />
+          <div className="skeleton h-6 w-24 rounded-full" />
+        </div>
+        <div className="skeleton mt-4 h-9 w-2/3 rounded" />
+        <div className="skeleton mt-4 h-2 w-48 rounded-full" />
+        <div className="mt-5 flex max-w-[560px] flex-col gap-2">
+          <div className="skeleton h-3 w-full rounded" />
+          <div className="skeleton h-3 w-11/12 rounded" />
+          <div className="skeleton h-3 w-2/3 rounded" />
+        </div>
+        <div className="mt-4 flex gap-2">
+          <div className="skeleton h-5 w-14 rounded-full" />
+          <div className="skeleton h-5 w-16 rounded-full" />
+          <div className="skeleton h-5 w-20 rounded-full" />
+        </div>
+      </div>
+
+      <div className="border-hairline mt-8 border-t pt-8">
+        <div className="skeleton h-3 w-32 rounded" />
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="skeleton h-20 rounded" />
+          <div className="skeleton h-20 rounded" />
+          <div className="skeleton h-20 rounded" />
+        </div>
+      </div>
+
+      <div className="border-hairline mt-8 border-t pt-8">
+        <div className="skeleton h-3 w-24 rounded" />
+        <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
+          {[0, 1].map((i) => (
+            <div key={i}>
+              <div className="skeleton aspect-square rounded" />
+              <div className="skeleton mt-3 h-4 w-4/5 rounded" />
+              <div className="skeleton mt-2 h-3 w-1/2 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

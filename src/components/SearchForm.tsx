@@ -81,8 +81,9 @@ export function SearchForm() {
     startLoading(submittedQuery);
   };
 
+  // 엔터만 누르면 제출(화살표 버튼과 동일), 줄바꿈은 Shift+엔터로.
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       submit();
     }

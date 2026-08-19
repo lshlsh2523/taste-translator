@@ -123,3 +123,40 @@ body {
   --c: var(--color-accent);
   --ct: color-mix(in oklab, var(--c) 55%, var(--color-ink) 45%);
 }
+
+/* 결과 화면 재검색(카드 클릭) 로딩 중 보여주는 스켈레톤 — 실제로 뜰
+   레이아웃 자리를 미리 회색 블록으로 그려두고, 좌우로 은은하게
+   반짝이는 shimmer로 "로딩 중"임을 알린다.
+
+   background-position을 직접 애니메이션시키면 프레임마다 리페인트가
+   필요해서, 스켈레톤 블록이 여러 개 동시에 돌 때 버벅였다(실측 확인함).
+   대신 각 블록 위에 겹쳐진 가상 요소(::after)를 transform: translateX로
+   쓸어 지나가게 한다 — transform은 GPU 합성만으로 처리돼 리페인트가
+   필요 없다. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-hairline);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(90deg, transparent, var(--color-paper) 50%, transparent);
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+    display: none;
+  }
+}
