@@ -41,9 +41,12 @@ export default function Home() {
         <CatReveal nameTags={nameTags} />
       </main>
 
-      <footer className="border-hairline shrink-0 border-t px-6 py-4 sm:px-10 lg:px-16 xl:px-20">
+      <footer className="border-hairline shrink-0 border-t px-6 py-4 sm:px-10 lg:flex lg:items-center lg:justify-between lg:px-16 xl:px-20">
         <p className="text-ink-faint text-center text-[0.8125rem] leading-normal lg:text-left">
           이 서비스는 MCM 공식 서비스가 아니며, 학생 프로젝트로 제작되었습니다.
+        </p>
+        <p className="text-ink-faint mt-2 text-center text-[0.8125rem] leading-normal lg:mt-0 lg:text-right">
+          이 사이트는 PC 환경, 배율 100% 기준으로 최적화되어 있습니다.
         </p>
       </footer>
     </div>

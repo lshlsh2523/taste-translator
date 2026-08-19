@@ -186,11 +186,16 @@ function TagCard({
   const padX = compact ? 10 : 20;
   const padY = compact ? 8 : 14;
 
-  const p0 = {
-    x: imageRect.left + (tag.x / 100) * imageRect.width,
-    y: imageRect.top + (tag.y / 100) * imageRect.height,
+  // pTouch: 리더라인이 실제로 옷/소품에 닿는 지점(touchX/touchY가 없으면
+  // x/y와 같아서 기존 동작 그대로). rowY: 카드가 놓이는 "행" — 항상
+  // x/y로만 정해져서, touchX/touchY를 바꿔도 카드 위치는 안 움직인다.
+  const pTouch = {
+    x: imageRect.left + ((tag.touchX ?? tag.x) / 100) * imageRect.width,
+    y: imageRect.top + ((tag.touchY ?? tag.y) / 100) * imageRect.height,
   };
-  const p1 = { x: p0.x + dir * stub, y: p0.y };
+  const rowY = imageRect.top + (tag.y / 100) * imageRect.height;
+  const pRow = { x: pTouch.x, y: rowY };
+  const p1 = { x: pRow.x + dir * stub, y: rowY };
   const p2 = { x: p1.x, y: p1.y + bend };
   let p3x = p2.x + dir * seg2;
 
@@ -203,22 +208,67 @@ function TagCard({
   }
   const p3 = { x: p3x, y: p2.y };
 
+  // 좌표가 이미지 비율(%) 기반이라 대부분 소수점 픽셀 값이 나온다 — 세
+  // 선분이 모서리에서 딱 맞닿기만 하면(겹치지 않으면) 브라우저가 각
+  // 선분을 독립적으로 서브픽셀 렌더링하면서 이음매에 미세한 틈이
+  // 보였다(실측 확인함). 겹침(JOINT_OVERLAP)만큼 서로 파고들게 해서
+  // 어떤 소수점 좌표에서도 이음매가 끊겨 보이지 않게 한다.
+  const JOINT_OVERLAP = 1;
+  // pTouch(옷에 닿는 지점) -> pRow(카드가 놓인 행의 높이로 수직 이동).
+  // touchX/touchY를 안 쓰는 태그는 pTouch.y === rowY라 사실상 안 보인다.
+  const lineTouch: CSSProperties = {
+    left: pTouch.x,
+    top: Math.min(pTouch.y, pRow.y) - JOINT_OVERLAP,
+    width: 1,
+    height: Math.max(1, Math.abs(pRow.y - pTouch.y)) + JOINT_OVERLAP * 2,
+  };
   const lineA: CSSProperties = {
-    left: Math.min(p0.x, p1.x),
-    top: p0.y,
-    width: Math.max(1, Math.abs(p1.x - p0.x)),
+    left: Math.min(pRow.x, p1.x),
+    top: pRow.y,
+    width: Math.max(1, Math.abs(p1.x - pRow.x)) + JOINT_OVERLAP,
     height: 1,
   };
   const lineB: CSSProperties = {
     left: p1.x,
-    top: Math.min(p1.y, p2.y),
+    top: Math.min(p1.y, p2.y) - JOINT_OVERLAP,
     width: 1,
-    height: Math.max(1, Math.abs(p2.y - p1.y)),
+    height: Math.max(1, Math.abs(p2.y - p1.y)) + JOINT_OVERLAP * 2,
   };
   const lineC: CSSProperties = {
     left: Math.min(p2.x, p3.x),
     top: p2.y,
     width: Math.max(1, Math.abs(p3.x - p2.x)),
+    height: 1,
+  };
+
+  // 꺾이는 다단 경로 대신 접점(pTouch)에서 카드 모서리(p3)까지 대각선
+  // 직선 하나로 잇는다 — 회전한 1px 높이 막대로 구현(각도 무관하게 동일 방식).
+  const straightDx = p3.x - pTouch.x;
+  const straightDy = p3.y - pTouch.y;
+  const straightLength = Math.hypot(straightDx, straightDy);
+  const straightAngle = (Math.atan2(straightDy, straightDx) * 180) / Math.PI;
+  const lineStraight: CSSProperties = {
+    left: pTouch.x,
+    top: pTouch.y,
+    width: straightLength,
+    height: 1,
+    transform: `rotate(${straightAngle}deg)`,
+    transformOrigin: "0 0",
+  };
+
+  // 한 번만 꺾는 L자 경로: 접점 -> 카드와 같은 높이(수직) -> 카드(수평),
+  // 중간의 짧은 stub/bend 굴곡은 건너뛴다. 카드의 실제 y(p3.y, rowY에서
+  // bend만큼 밀린 값)를 그대로 목표 높이로 써야 카드에 정확히 닿는다.
+  const lineElbowV: CSSProperties = {
+    left: pTouch.x,
+    top: Math.min(pTouch.y, p3.y) - JOINT_OVERLAP,
+    width: 1,
+    height: Math.max(1, Math.abs(p3.y - pTouch.y)) + JOINT_OVERLAP * 2,
+  };
+  const lineElbowH: CSSProperties = {
+    left: Math.min(pTouch.x, p3.x),
+    top: p3.y,
+    width: Math.max(1, Math.abs(p3.x - pTouch.x)) + JOINT_OVERLAP,
     height: 1,
   };
 
@@ -233,9 +283,22 @@ function TagCard({
 
   return (
     <>
-      <div className="leader-line absolute" style={lineA} />
-      <div className="leader-line absolute" style={lineB} />
-      <div className="leader-line absolute" style={lineC} />
+      {!tag.noLine &&
+        (tag.straightLine ? (
+          <div className="leader-line absolute" style={lineStraight} />
+        ) : tag.singleBend ? (
+          <>
+            <div className="leader-line absolute" style={lineElbowV} />
+            <div className="leader-line absolute" style={lineElbowH} />
+          </>
+        ) : (
+          <>
+            <div className="leader-line absolute" style={lineTouch} />
+            <div className="leader-line absolute" style={lineA} />
+            <div className="leader-line absolute" style={lineB} />
+            <div className="leader-line absolute" style={lineC} />
+          </>
+        ))}
       <div
         className="tag-card border-tagline absolute border bg-white"
         style={cardStyle}
