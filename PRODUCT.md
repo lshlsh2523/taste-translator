@@ -34,15 +34,14 @@ An LLM maps free-text taste descriptions onto luxury industry vocabulary, but pr
 ## Capabilities and Constraints
 
 - UI copy is entirely in Korean. Type scale and line-height must be tuned for Hangul, not adapted from Latin defaults.
-- Product data comes from a fixed JSON catalogue of ~290 MCM items. Confirmed fields today: department, category, subcategory, name, SKU, colour count, product URL, image URL.
-- Price, material, size, and description fields are not yet collected. Layouts must render correctly with these fields absent — omit the row entirely, never show placeholder text.
+- Product data comes from a fixed JSON catalogue of ~657 MCM items. Confirmed fields today: department, category, subcategory, name, SKU, colour count, product URL, image URL.
+- Price, material, size, and description fields are not yet collected in the catalogue itself. Layouts must render correctly with these fields absent — omit the row entirely, never show placeholder text. Each result links out to the product's real MCM page, where the user can see this detail directly.
 - Product images are remote URLs and may 404; every image slot needs a designed fallback state.
 - LLM output is constrained to the fixed catalogue; when no catalogue item matches, the product must show a "no match" state plus an adjacent taste card, never a fabricated product.
-- The MCM catalogue itself is not yet present in this repository (no data file found as of this writing) — it is pending delivery.
 
 ## Evidence on Hand
 
-- No real catalogue data, imagery, or copy is present in the repository yet. The ~290-item MCM catalogue is described but not yet delivered as a file. Future work must not fabricate sample products, prices, or descriptions in its place — use structurally honest placeholders that are visibly placeholders, or wait for real data.
+- The full ~657-item MCM catalogue is in the repository (`data/mcm_full_catalog_pilot.csv`) and is what the matching pipeline runs against — no fabricated or placeholder products. The product is live and deployed, running the real two-stage Gemini pipeline against this catalogue end to end.
 
 ## Product Principles
 
