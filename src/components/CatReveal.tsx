@@ -241,12 +241,22 @@ function TagCard({
         style={cardStyle}
       >
         {tag.tier === "vibe" ? (
-          <span
-            className="font-headline text-ink block leading-tight font-bold"
-            style={{ fontSize: koSize }}
-          >
-            {tag.ko}
-          </span>
+          <>
+            <span
+              className="font-headline text-ink block leading-tight font-bold"
+              style={{ fontSize: koSize }}
+            >
+              {tag.ko}
+            </span>
+            {tag.en && (
+              <span
+                className="font-accent-en text-ink-soft mt-0.5 block leading-tight italic"
+                style={{ fontSize: enSize }}
+              >
+                {tag.en}
+              </span>
+            )}
+          </>
         ) : (
           <>
             <span className="text-ink block leading-tight" style={{ fontSize: koSize }}>

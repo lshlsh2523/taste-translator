@@ -193,13 +193,13 @@ export function SearchForm() {
                     <p className="text-[0.8125rem]">
                       <span className="text-ink font-medium">취향 용어</span>
                       <span className="text-ink-faint mx-2">·</span>
-                      <span className="text-ink-soft">모노크롬 미니멀</span>
+                      <span className="text-ink-soft">미니멀룩 (Minimalism)</span>
                     </p>
                     <p className="mt-1.5 text-[0.8125rem]">
-                      <span className="text-ink font-medium">전문 용어</span>
+                      <span className="text-ink font-medium">패션 용어</span>
                       <span className="text-ink-faint mx-2">·</span>
                       <span className="text-ink-soft">
-                        사첼 / Satchel · 나파 레더 / Nappa
+                        탑 핸들 백 (Top Handle Bag) · 사첼 백 (Satchel)
                       </span>
                     </p>
                   </div>
