@@ -58,10 +58,21 @@ export function SearchLoading({
       </p>
 
       {errored ? (
-        <div className="mt-16 flex flex-col items-center gap-7 lg:mt-20">
-          <p className="text-ink text-center text-[1.0625rem] sm:text-[1.1875rem]">
-            지금은 연결이 어려워요. 잠시 후 다시 시도해주세요.
-          </p>
+        <div className="mt-16 flex flex-col items-center gap-10 lg:mt-20">
+          <div className="flex flex-col items-center gap-3">
+            <span
+              aria-hidden="true"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[1rem] font-bold"
+              style={{ background: "#f2e1d7", color: "#8e361a" }}
+            >
+              !
+            </span>
+            <p className="text-ink text-center text-[1.0625rem] sm:text-[1.1875rem]">
+              지금 서버 연결이 불안정해요.
+              <br />
+              인터넷 연결을 확인하고 잠시 후 다시 시도해주세요.
+            </p>
+          </div>
           <button
             type="button"
             onClick={onRetry}

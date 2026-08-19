@@ -73,7 +73,7 @@ export function ResultView() {
       .catch(() => {
         inFlightRef.current = null;
         if (cancelled) return;
-        setState({ status: "error", message: "지금은 연결이 어려워요. 잠시 후 다시 시도해주세요." });
+        setState({ status: "error", message: "지금 서버 연결이 불안정해요.\n인터넷 연결을 확인하고 잠시 후 다시 시도해주세요." });
       });
     return () => {
       cancelled = true;
@@ -112,7 +112,7 @@ export function ResultView() {
       storeResult(term, response);
       setState({ status: "loaded", query: term, response });
     } catch {
-      setState({ status: "error", message: "지금은 연결이 어려워요. 잠시 후 다시 시도해주세요." });
+      setState({ status: "error", message: "지금 서버 연결이 불안정해요.\n인터넷 연결을 확인하고 잠시 후 다시 시도해주세요." });
     }
   };
 
@@ -138,7 +138,7 @@ export function ResultView() {
         setState({ status: "loaded", query, response });
       })
       .catch(() => {
-        setState({ status: "error", message: "지금은 연결이 어려워요. 잠시 후 다시 시도해주세요." });
+        setState({ status: "error", message: "지금 서버 연결이 불안정해요.\n인터넷 연결을 확인하고 잠시 후 다시 시도해주세요." });
       });
   };
 
@@ -241,26 +241,39 @@ function LoadingState({ query }: { query: string }) {
   );
 }
 
+// 실제 데이터 문제(no_match)와 구분되는 "진짜 통신 실패"라, 무드 컬러
+// 대신 고정된 경고 톤(coral 계열)을 써서 다른 결과 화면들과 확실히
+// 다르게 보이게 한다 — 색으로도 "이건 콘텐츠가 아니라 오류다"를 전달.
 function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 py-24 text-center">
-      <p className="text-ink text-[1.0625rem]">{message}</p>
-      {onRetry ? (
-        <button
-          type="button"
-          onClick={onRetry}
-          className="bg-ink text-paper hover:bg-transparent hover:text-ink focus-visible:outline-ink rounded-full px-7 py-3.5 text-[1rem] transition-colors duration-200 hover:outline hover:outline-1 hover:outline-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+    <div className="flex flex-1 flex-col items-center justify-center gap-10 py-24 text-center">
+      <div className="flex flex-col items-center gap-3">
+        <span
+          aria-hidden="true"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-[1rem] font-bold"
+          style={{ background: "#f2e1d7", color: "#8e361a" }}
         >
-          같은 검색어로 다시 시도
-        </button>
-      ) : (
+          !
+        </span>
+        <p className="text-ink text-[1.0625rem] leading-[1.6] whitespace-pre-line">{message}</p>
+      </div>
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="bg-ink text-paper hover:bg-transparent hover:text-ink focus-visible:outline-ink rounded-full px-7 py-3.5 text-[1rem] transition-colors duration-200 hover:outline hover:outline-1 hover:outline-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            같은 검색어로 다시 시도
+          </button>
+        )}
         <Link
           href="/search"
-          className="bg-ink text-paper hover:bg-transparent hover:text-ink focus-visible:outline-ink rounded-full px-7 py-3.5 text-[1rem] transition-colors duration-200 hover:outline hover:outline-1 hover:outline-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="border-ink text-ink hover:bg-ink hover:text-paper focus-visible:outline-ink rounded-full border px-7 py-3.5 text-[1rem] transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         >
-          다시 검색하기
+          새로 검색하기
         </Link>
-      )}
+      </div>
     </div>
   );
 }
