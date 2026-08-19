@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 이런느낌 (Taste Translator)
 
-## Getting Started
+> "이런 느낌인데 뭐라고 부르는지 모르겠어" — 말로 설명한 취향을 실제 럭셔리 패션 용어와 진짜 MCM 상품으로 번역해주는 서비스
 
-First, run the development server:
+**배포 링크**: https://taste-translator-five.vercel.app/
+
+## 어떤 문제를 푸나요
+
+이제 막 럭셔리 패션에 관심을 갖기 시작한 20대는 원하는 스타일을 머릿속에 분명히 그릴 수 있지만, 그걸 검색으로 옮길 업계 용어(새첼, 호보, 슬라우치 등)를 몰라서 검색 자체가 안 되는 경우가 많습니다. "이런느낌"은 자연어로 취향을 설명하면:
+
+1. 그 인상을 부르는 **취향 용어** 카드를 붙여주고,
+2. 그에 대응하는 **럭셔리 업계 용어**와 유래를 설명해주고,
+3. 고정된 카탈로그 안에서 **실제로 존재하는 MCM 상품**을 매칭해서 보여줍니다.
+
+## 왜 이렇게 만들었나
+
+LLM에게 상품 추천을 자유롭게 생성하게 하면 존재하지 않는 상품을 그럴듯하게 지어내는 문제가 있었습니다. 그래서 이 프로젝트는 모델의 역할을 "고정된 실제 카탈로그 안에서 고르기"로 제한했습니다. 매칭되는 게 없으면 상품을 지어내는 대신 "일치하는 게 없어요"라고 정직하게 말하고, 대신 인접한 취향 카드를 제안합니다.
+
+## 어떻게 동작하나요
+
+Gemini를 2단계로 호출하는 파이프라인입니다.
+
+1. **1단계 (취향 용어 매칭)**: 사용자가 입력한 자연어 문장을 미리 정의된 취향 용어 라이브러리와 비교해서, 가장 잘 맞는 취향 용어(들)를 찾습니다.
+2. **2단계 (제품 매칭)**: 매칭된 취향 용어를 기준으로 후보 상품군을 좁힌 뒤, 이미지 기반으로 실제 카탈로그(약 657개 MCM 상품)에서 점수를 매겨 가장 잘 맞는 상품을 추천합니다.
+
+점수가 기준 이하라도 결과를 완전히 숨기지 않고, "일치도는 낮지만 이 정도 취향 용어와 상품을 찾았어요" 형태로 보여줍니다. 아예 맞는 게 없으면 인접한 취향 카드를 제안하는 화면으로 넘어갑니다.
+
+## 기술 스택
+
+- **Framework**: Next.js 16 (App Router), React 19, TypeScript
+- **Styling**: Tailwind CSS v4
+- **AI**: Google Gemini (`@google/genai`)
+- **배포**: Vercel
+
+## 로컬에서 실행하기
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`.env.local`에 아래 값이 필요합니다.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+GEMINI_API_KEY=your-gemini-api-key
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 팀
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+LeeSeoHyeong, HyoJuSeo
