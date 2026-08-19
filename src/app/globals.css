@@ -7,6 +7,10 @@
   --color-ink-faint: #6f685c;
   --color-hairline: #e3dbcb;
   --color-tagline: #928b80;
+  /* 포인트 컬러 두 개 — 코냑 러스트 톤(accent, 소재)과 슬레이트 블루(accent-2, 형태).
+     "패션 용어" 카드의 형태/소재 구분 전용 고정색이라 무드 컬러랑 무관하다. */
+  --color-accent: #9c5233;
+  --color-accent-2: #4f6076;
 }
 
 @theme inline {
@@ -16,6 +20,8 @@
   --color-ink-faint: var(--color-ink-faint);
   --color-hairline: var(--color-hairline);
   --color-tagline: var(--color-tagline);
+  --color-accent: var(--color-accent);
+  --color-accent-2: var(--color-accent-2);
   --font-sans: var(--font-pretendard);
   --font-headline: var(--font-gowun-batang);
   --font-accent-en: var(--font-instrument-serif);
@@ -106,4 +112,14 @@ body {
 .tag-card {
   box-shadow: none;
   border-radius: 0;
+}
+
+/* 검색마다 1단계가 골라주는 "무드" 색 스코프. --c는 결과 컴포넌트에서
+   인라인 스타일로 채워 넣는다(없으면 기본 액센트로 대체). --ct는 배지
+   글자·판단 라벨처럼 작은 글자에만 쓰는, ink 쪽으로 섞어 진하게 보정한
+   버전 — 연한 색이 뽑혀도 가독성이 떨어지지 않게 하기 위함. 나머지
+   (바 채움, 박스 테두리)는 원색(--c) 그대로 쓴다. */
+.mood-scope {
+  --c: var(--color-accent);
+  --ct: color-mix(in oklab, var(--c) 55%, var(--color-ink) 45%);
 }

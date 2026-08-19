@@ -36,9 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="ko"
       className={`${pretendard.variable} ${gowunBatang.variable} ${instrumentSerif.variable} antialiased`}
     >
-      <body className="flex min-h-svh flex-col lg:h-svh lg:overflow-hidden">
-        {children}
-      </body>
+      <body className="flex min-h-svh flex-col">{children}</body>
     </html>
   );
 }

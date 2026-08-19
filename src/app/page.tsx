@@ -4,7 +4,10 @@ import { nameTags } from "@/data/name-tags";
 
 export default function Home() {
   return (
-    <>
+    // "스크롤 없이 한 화면" 디자인은 홈 화면 전용 — 예전엔 이게
+    // body(전역 레이아웃)에 걸려있어서 /result처럼 내용이 긴 페이지도
+    // 같이 스크롤이 막혀버렸다. 홈 페이지 안에서만 적용되게 이동.
+    <div className="flex min-h-svh flex-1 flex-col lg:h-svh lg:overflow-hidden">
       <main className="relative flex flex-1 flex-col overflow-hidden lg:flex-row lg:items-stretch">
         <section className="flex shrink-0 flex-col justify-center pt-12 pr-5 pb-8 pl-7 sm:pr-8 sm:pl-12 lg:w-[40%] lg:py-0 lg:pr-8 lg:pl-12 xl:pr-12 xl:pl-16">
           <div className="max-w-[560px]">
@@ -43,6 +46,6 @@ export default function Home() {
           이 서비스는 MCM 공식 서비스가 아니며, 학생 프로젝트로 제작되었습니다.
         </p>
       </footer>
-    </>
+    </div>
   );
 }

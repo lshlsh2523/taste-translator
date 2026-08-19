@@ -4,7 +4,7 @@ import { useRef, useState, type KeyboardEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { runTranslation } from "@/lib/mock-translate";
+import { runTranslation } from "@/lib/translate-client";
 import { SearchLoading } from "@/components/SearchLoading";
 
 const STARTERS = [
@@ -15,8 +15,12 @@ const STARTERS = [
   "무심하고 차분한…",
 ];
 
-const STAGE_MS = 2200;
-const SLOW_HINT_MS = 15000;
+// 실제 백엔드는 2단계(이미지 비전 채점)에서 40~70초가 걸릴 수 있어서
+// (Gemini 무료 티어 기준), 단계 전환·"조금만 더 기다려주세요" 문구
+// 타이밍을 실측 소요 시간에 맞춰 늘림 — mock 시절의 5.2초 기준값이
+// 아님.
+const STAGE_MS = 12000;
+const SLOW_HINT_MS = 35000;
 
 type Status = "idle" | "loading" | "error";
 

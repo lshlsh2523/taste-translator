@@ -1,0 +1,9 @@
+{
+  "totalProducts": 657,
+  "compositeFixed": 6,
+  "seeAllNormalized": 76,
+  "noShapeSubcategoryCount": 152,
+  "withMaterialKeywords": 559,
+  "materialKeywordCoveragePct": 85.1,
+  "colorInSlugCoverage": "name_slug에는 색상 토큰이 사실상 없음 (656개 중 실질 매칭 1건) — 색상 신호는 material_keywords만으로는 커버되지 않음, 상세 정보 스크래핑 완료 전까지 이미지 신호(0~3점)가 색상 판단을 대신함"
+}
