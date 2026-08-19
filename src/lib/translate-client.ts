@@ -1,4 +1,4 @@
-import type { TranslateResponse } from "@/types/taste";
+import type { MatchedTerm, TranslateResponse } from "@/types/taste";
 
 // mock-translate.ts를 대체하는 실제 백엔드 호출. 결과는 sessionStorage에
 // 저장해두고 /result 페이지가 읽는다 — 결과 JSON을 URL 쿼리로 넘기기엔
@@ -42,11 +42,17 @@ export async function fetchTranslate(query: string): Promise<TranslateResponse> 
   return (await res.json()) as TranslateResponse;
 }
 
-export async function runTermRetry(term: string, originalQuery?: string): Promise<TranslateResponse> {
+export async function runTermRetry(
+  term: string,
+  originalQuery?: string,
+  knownMatch?: MatchedTerm,
+  knownMoodColor?: string,
+  knownMoodEmoji?: string,
+): Promise<TranslateResponse> {
   const res = await fetch("/api/translate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ term, originalQuery }),
+    body: JSON.stringify({ term, originalQuery, knownMatch, knownMoodColor, knownMoodEmoji }),
   });
   if (!res.ok) {
     throw new Error(`재요청 실패: ${res.status}`);

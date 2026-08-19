@@ -92,6 +92,10 @@ export async function callStage1(userInput: string, library: TasteLibrary): Prom
     config: {
       responseMimeType: "application/json",
       responseJsonSchema: STAGE1_SCHEMA,
+      // SDK 기본값은 408/429/5xx에서 최대 5회까지 알아서 재시도한다(우리가
+      // 켠 적 없음) — 일시적 에러는 재시도 없이 바로 실패시키기로 한
+      // 결정(withTransientRetry 제거)과 어긋나서 명시적으로 끈다.
+      httpOptions: { retryOptions: { attempts: 1 } },
     },
   });
   if (!response.text) {
@@ -141,6 +145,8 @@ export async function callStage2(
     config: {
       responseMimeType: "application/json",
       responseJsonSchema: STAGE2_SCHEMA,
+      // 1단계와 동일한 이유로 SDK 기본 재시도를 끈다.
+      httpOptions: { retryOptions: { attempts: 1 } },
     },
   });
   if (!response.text) {

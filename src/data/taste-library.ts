@@ -91,9 +91,18 @@ const luxuryTerms: LuxuryTermCard[] = [
   {
     term: "미니백 (Mini Bag)",
     origin: "수납보다 장식성에 방점, 2010년대 후반 SNS 시대에 \"포토제닉함\"으로 유행",
-    kind: "shape",
+    // "미니백"은 MCM 실제 카탈로그의 subcategory 값이 아니라(백팩/크로스백/
+    // 숄더백-크로스백 등 형태별 분류를 가로지르는 사이즈 기준 마케팅 필터),
+    // MCM 사이트 자체도 별도 카테고리 페이지가 아니라 여러 형태의 상품을
+    // "미니" 사이즈로 다시 모아 보여주는 필터로 취급한다. 그래서 kind를
+    // "shape"(mcm_subcategory 하드 매칭)가 아니라 "material"로 바꾸고,
+    // 실제 미니백 페이지(kr.mcmworldwide.com/ko_KR/가방/미니백)에서 "미니"/
+    // "엑스트라 미니" 표기가 붙은 상품 53개를 확인해 그 SKU들의
+    // material_keywords에 "미니"를 심어뒀다(scripts/build-catalog.mjs의
+    // MINI_BAG_SKUS 참고, 2026-08-19 확인).
+    kind: "material",
     matching_mood: ["발랄함", "트렌디", "파티룩"],
-    mcm_subcategory: ["미니백"],
+    material_keywords: ["미니"],
   },
   {
     term: "클러치 (Clutch)",
@@ -798,6 +807,33 @@ export function resolveMaterialSignals(term: TasteTermCard, library: TasteLibrar
     for (const m of card.material_keywords ?? []) materials.add(m);
   }
   return [...materials];
+}
+
+// 용어명 뒤에 붙은 "(영문 표기)"만 뗀 문자열. 라이트 계열 모델이 규칙
+// 1번(라이브러리 용어를 정확히 그대로 쓸 것)을 안 지키고 이 괄호를
+// 통째로 빼먹는 경우가 실제로 있었다(예: "코케트 (Coquette)" ->
+// "코케트") — 이후 파이프라인 전체가 term 문자열 완전 일치로 라이브러리
+// 카드를 찾기 때문에, 그 표기 누락 하나로 매칭이 통째로 깨졌었다.
+function stripEnglishSuffix(term: string): string {
+  return term.replace(/\s*\([^)]*\)\s*$/, "").trim();
+}
+
+// 1단계가 돌려준 term 문자열로 라이브러리 카드를 찾는다. 먼저 완전
+// 일치를 시도하고, 실패하면 괄호 안 영문 표기를 뗀 한글 부분만 비교해서
+// 찾는다(그 한글 부분이 유일하게 일치하는 카드가 있을 때만 — 여러 개면
+// 어느 걸 골라야 할지 알 수 없으니 지어내지 않고 포기한다). 이렇게 찾은
+// 경우 반환값의 term은 항상 라이브러리에 저장된 정확한 표기다 — 모델이
+// 준 표기를 그대로 쓰지 않는다.
+export function findTasteTermCardLoose(
+  rawTerm: string,
+  library: TasteLibrary = tasteLibrary,
+): TasteTermCard | undefined {
+  const exact = library.tasteTerms.find((t) => t.term === rawTerm);
+  if (exact) return exact;
+
+  const strippedRaw = stripEnglishSuffix(rawTerm);
+  const candidates = library.tasteTerms.filter((t) => stripEnglishSuffix(t.term) === strippedRaw);
+  return candidates.length === 1 ? candidates[0] : undefined;
 }
 
 export function findLuxuryTermByName(

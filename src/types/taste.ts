@@ -130,6 +130,10 @@ export type EnrichedRecommendedProduct = RecommendedProduct & {
   image: string;
   product_url: string;
   primary_sku: string;
+  // total_score의 실제 만점 — 형태 세분류가 없는 카테고리는 5점, 그 외는
+  // 6점(prompts.ts의 "세부 형태 분류가 없는 카테고리 예외 규칙" 참고).
+  // 화면에서 "몇 점 중 몇 점"인지 헷갈리지 않도록 퍼센트로 환산해 보여줄 때 쓴다.
+  max_score: number;
 };
 
 // --- 오케스트레이션 결과 (프론트에 내려주는 최종 응답) ---
@@ -169,6 +173,17 @@ export type TranslateSuccess = {
   // 없을 수 있어 optional — 화면에서는 없으면 기본 액센트 색으로 대체.
   moodColor?: string;
   moodEmoji?: string;
+  // true면 matchedTerm.reason/confidence가 1단계 AI가 실제로 채점한 값이
+  // 아니라 합성된 자리값이다 — "인접 취향" 카드처럼 애초에 1단계가 이
+  // 용어를 채점한 적이 없는 경로에서만 true. 이때 화면은 일치도 배지·바·
+  // "이렇게 판단했어요" 박스를 숨겨야 한다(보여줄 진짜 근거가 없으므로).
+  matchedTermIsSynthetic?: boolean;
+  // true면 products가 정식 매칭 임계값(6점 중 3점/5점 중 2.5점)을 넘긴
+  // 게 아니라, 임계값을 넘긴 후보가 하나도 없어서 그나마 점수가 가장
+  // 높았던 것 1~2개를 그대로 보여주는 것이다 — 화면은 이때 "일치도가
+  // 낮은 편이에요" 같은 안내를 products 옆에 표시해야 한다. false/undefined면
+  // 기존처럼 임계값을 정식으로 넘긴 제품들.
+  belowThreshold?: boolean;
 };
 
 export type TranslateAdjacentFallback = {

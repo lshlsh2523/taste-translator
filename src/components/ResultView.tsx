@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -10,7 +10,7 @@ import {
   runTermRetry,
   storeResult,
 } from "@/lib/translate-client";
-import type { TranslateResponse } from "@/types/taste";
+import type { MatchedTerm, TranslateResponse } from "@/types/taste";
 
 type ViewState =
   | { status: "loading" }
@@ -30,6 +30,20 @@ export function ResultView() {
   const [state, setState] = useState<ViewState>(() =>
     query ? { status: "loading" } : { status: "error", message: "검색어가 없어요." },
   );
+  // "이런 무드도 감지했어요"/"인접 취향" 카드를 눌러 다른 취향 화면으로
+  // 들어갈 때마다 직전에 보고 있던 결과를 여기 쌓아둔다 — "이전 화면"
+  // 버튼을 누르면 이 스택에서 마지막 걸 꺼내 그대로 복원한다. URL은 안
+  // 바꾸므로 브라우저 뒤로가기가 아니라 화면 안에서만 동작하는 뒤로가기.
+  const [history, setHistory] = useState<ViewState[]>([]);
+
+  // 개발 모드에서 React Strict Mode가 이 effect를 마운트 시 한 번 더
+  // 돌린다(마운트 → 클린업 → 재마운트) — 아래 cancelled 플래그는 "화면
+  // 반영"만 막을 뿐 실제 네트워크 요청은 두 번 다 나가서, 검색 한 번에
+  // API 호출이 실제로 2배로 나가는 문제가 있었다(실측 확인함). 같은
+  // query에 대해 이미 나간 요청이 있으면 새로 안 보내고 그 Promise를
+  // 재사용해서 막는다. ref라 Strict Mode의 두 번째 실행에서도 값이
+  // 유지된다.
+  const inFlightRef = useRef<{ query: string; promise: Promise<TranslateResponse> } | null>(null);
 
   useEffect(() => {
     if (!query) return;
@@ -44,13 +58,20 @@ export function ResultView() {
           setState({ status: "loaded", query, response: stored });
           return undefined;
         }
-        return fetchTranslate(query).then((response) => {
+        const promise =
+          inFlightRef.current?.query === query
+            ? inFlightRef.current.promise
+            : fetchTranslate(query);
+        inFlightRef.current = { query, promise };
+        return promise.then((response) => {
+          if (inFlightRef.current?.promise === promise) inFlightRef.current = null;
           if (cancelled) return;
           storeResult(query, response);
           setState({ status: "loaded", query, response });
         });
       })
       .catch(() => {
+        inFlightRef.current = null;
         if (cancelled) return;
         setState({ status: "error", message: "지금은 연결이 어려워요. 잠시 후 다시 시도해주세요." });
       });
@@ -59,18 +80,49 @@ export function ResultView() {
     };
   }, [query]);
 
-  const handleAdjacentClick = async (term: string) => {
+  // knownMatch: "이런 무드도 감지했어요" 카드에서 넘어올 때는 원래 검색의
+  // 1단계가 이미 이 용어를 채점해둔 MatchedTerm이 있다 — 그대로 서버에
+  // 넘겨서 진짜 reason/confidence를 그대로 쓰게 한다. "인접 취향" 카드는
+  // 애초에 1단계가 채점한 적 없는 용어라 knownMatch 없이 호출한다.
+  const handleAdjacentClick = async (term: string, knownMatch?: MatchedTerm) => {
     // 직전 검색 원문이 남아있으면(예: 성공 결과에서 "이런 무드도
     // 감지했어요" 칩을 눌렀을 때) 색상 신호 판단용으로 같이 넘긴다.
     const previousQuery = state.status === "loaded" ? state.query : undefined;
+    // 지금 화면에 이미 떠 있는 무드 색/이모지가 있으면(성공 결과에서만
+    // 존재 — adjacent_fallback 화면은 애초에 이 필드가 없어 자동으로
+    // undefined) 그대로 재사용해서 넘긴다. 1단계를 다시 안 불러도 되게.
+    const knownMood =
+      state.status === "loaded" && state.response.status === "success"
+        ? { color: state.response.moodColor, emoji: state.response.moodEmoji }
+        : undefined;
+    // 지금 보고 있던 화면을 스택에 쌓아둬서 "이전 화면" 버튼으로 되돌아올
+    // 수 있게 한다 — 로딩/에러 화면에서는 되돌아올 게 없으니 안 쌓는다.
+    if (state.status === "loaded") {
+      setHistory((prev) => [...prev, state]);
+    }
     setState({ status: "loading" });
     try {
-      const response = await runTermRetry(term, previousQuery);
+      const response = await runTermRetry(
+        term,
+        previousQuery,
+        knownMatch,
+        knownMood?.color,
+        knownMood?.emoji,
+      );
       storeResult(term, response);
       setState({ status: "loaded", query: term, response });
     } catch {
       setState({ status: "error", message: "지금은 연결이 어려워요. 잠시 후 다시 시도해주세요." });
     }
+  };
+
+  const handleGoBack = () => {
+    setHistory((prev) => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      setState(last);
+      return prev.slice(0, -1);
+    });
   };
 
   // 일시적 에러(과부하 등) 재시도를 자동으로 하지 않기로 했으니(할당량
@@ -92,13 +144,25 @@ export function ResultView() {
 
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-[880px] flex-col px-6 pt-6 pb-16 sm:px-10 lg:px-16">
-      <div>
+      <div className="flex items-center justify-between gap-4">
+        {history.length > 0 ? (
+          <button
+            type="button"
+            onClick={handleGoBack}
+            className="text-ink-soft hover:text-ink focus-visible:outline-ink inline-flex items-center gap-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <span aria-hidden="true">←</span>
+            이전 화면
+          </button>
+        ) : (
+          <span />
+        )}
         <Link
           href="/search"
           className="text-ink-soft hover:text-ink focus-visible:outline-ink inline-flex items-center gap-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         >
-          <span aria-hidden="true">←</span>
-          다시 검색하기
+          새로운 취향 검색하기
+          <span aria-hidden="true">→</span>
         </Link>
       </div>
 
@@ -109,7 +173,11 @@ export function ResultView() {
         )}
         {state.status === "loaded" && (
           <ResultBody
-            query={state.query}
+            // state.query는 "이런 무드도 감지했어요" 카드를 눌렀을 때
+            // 클릭한 용어 이름으로 덮어써진다(캐시 키 용도) — 화면 맨 위
+            // 인용구는 사용자가 실제로 검색한 원문을 보여줘야 하므로,
+            // 카드 클릭으로도 절대 안 바뀌는 URL의 query(원문) 쪽을 쓴다.
+            query={query}
             response={state.response}
             onAdjacentClick={handleAdjacentClick}
           />
@@ -207,7 +275,7 @@ function ResultBody({
 }: {
   query: string;
   response: TranslateResponse;
-  onAdjacentClick: (term: string) => void;
+  onAdjacentClick: (term: string, knownMatch?: MatchedTerm) => void;
 }) {
   return (
     <div>
@@ -231,7 +299,7 @@ function SuccessResult({
   onAdjacentClick,
 }: {
   response: Extract<TranslateResponse, { status: "success" }>;
-  onAdjacentClick: (term: string) => void;
+  onAdjacentClick: (term: string, knownMatch?: MatchedTerm) => void;
 }) {
   const {
     matchedTerm,
@@ -244,6 +312,8 @@ function SuccessResult({
     allMatchedTerms,
     moodColor,
     moodEmoji,
+    matchedTermIsSynthetic,
+    belowThreshold,
   } = response;
   // 1단계가 "사랑스러운 무드의 단정한 분위기"처럼 서로 다른 무드를 여러
   // 취향으로 나눠 잡아도, 지금 화면엔 그중 하나(1순위로 성공한 것)만
@@ -268,12 +338,12 @@ function SuccessResult({
           <span className="text-ink font-medium">취향 용어</span>
           <span className="text-ink-faint">·</span>
           <TrustBadge trustLevel={matchedTerm.trust_level} />
-          <ConfidenceBadge confidence={matchedTerm.confidence} />
+          {!matchedTermIsSynthetic && <ConfidenceBadge confidence={matchedTerm.confidence} />}
         </p>
         <h1 className="font-headline text-ink mt-2 text-[2rem] font-bold leading-[1.3] sm:text-[2.25rem]">
           {matchedTerm.term}
         </h1>
-        <ConfidenceBar confidence={matchedTerm.confidence} />
+        {!matchedTermIsSynthetic && <ConfidenceBar confidence={matchedTerm.confidence} />}
         {(matchedTermHistory ?? matchedTermOrigins[matchedTerm.term]) && (
           <div className="mt-4 flex max-w-[560px] flex-col gap-3">
             <div>
@@ -305,25 +375,27 @@ function SuccessResult({
           </div>
         )}
 
-        <div
-          className="mt-6 max-w-[560px] p-4"
-          style={{
-            background: "color-mix(in oklab, var(--c) 9%, var(--color-paper))",
-            borderLeft: "3px solid var(--c)",
-          }}
-        >
-          <div className="flex items-center gap-2">
-            {moodEmoji && (
-              <span aria-hidden="true" className="text-[0.9375rem]">
-                {moodEmoji}
-              </span>
-            )}
-            <p className="text-[0.75rem] font-medium" style={{ color: "var(--ct)" }}>
-              이렇게 판단했어요
-            </p>
+        {!matchedTermIsSynthetic && (
+          <div
+            className="mt-6 max-w-[560px] p-4"
+            style={{
+              background: "color-mix(in oklab, var(--c) 9%, var(--color-paper))",
+              borderLeft: "3px solid var(--c)",
+            }}
+          >
+            <div className="flex items-center gap-2">
+              {moodEmoji && (
+                <span aria-hidden="true" className="text-[0.9375rem]">
+                  {moodEmoji}
+                </span>
+              )}
+              <p className="text-[0.75rem] font-medium" style={{ color: "var(--ct)" }}>
+                이렇게 판단했어요
+              </p>
+            </div>
+            <p className="text-ink-soft mt-1.5 text-[0.875rem] leading-[1.6]">{matchedTerm.reason}</p>
           </div>
-          <p className="text-ink-soft mt-1.5 text-[0.875rem] leading-[1.6]">{matchedTerm.reason}</p>
-        </div>
+        )}
       </div>
 
       {luxuryTerms.length > 0 && (
@@ -374,12 +446,32 @@ function SuccessResult({
       )}
 
       <div className="border-hairline mt-8 border-t pt-8">
-        <p className="text-ink-faint text-[0.75rem]">이런 제품은 어때요? · {products.length}개</p>
-        <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
-          {products.map((product) => (
-            <ProductCard key={product.product_name} product={product} />
-          ))}
-        </div>
+        <p className="text-ink-faint text-[0.75rem]">
+          이런 제품은 어때요?
+          {products.length > 0 && ` · ${products.length}개`}
+          {belowThreshold && (
+            <span className="ml-1" style={{ color: "var(--ct)" }}>
+              · 일치도가 낮은 편이에요
+            </span>
+          )}
+        </p>
+        {products.length > 0 ? (
+          <>
+            <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
+              {products.map((product) => (
+                <ProductCard key={product.product_name} product={product} />
+              ))}
+            </div>
+            <p className="text-ink-faint mt-4 text-[0.75rem] leading-[1.5]">
+              일부 상품은 품절되었거나 시즌이 끝나 상세 페이지가 사라졌을 수 있어요. 그런 경우
+              눌렀을 때 관련 카테고리 목록으로 연결돼요.
+            </p>
+          </>
+        ) : (
+          <p className="text-ink-soft mt-4 text-[0.9375rem]">
+            지금은 이 취향에 맞는 제품을 찾지 못했어요.
+          </p>
+        )}
       </div>
 
       {otherMatchedTerms.length > 0 && (
@@ -390,7 +482,7 @@ function SuccessResult({
               <button
                 key={term.term}
                 type="button"
-                onClick={() => onAdjacentClick(term.term)}
+                onClick={() => onAdjacentClick(term.term, term)}
                 className="border-hairline hover:border-ink text-left transition-colors border p-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
               >
                 <p className="text-ink font-headline text-[1rem] font-bold">{term.term}</p>
@@ -409,12 +501,32 @@ function SuccessResult({
   );
 }
 
+// 퍼센트 숫자만 나열하면 실제 값 차이가 작을 때(예: 67%, 60%, 58%) 다
+// 비슷해 보여서 신뢰도가 낮아 보인다는 피드백 — 구간을 나눠 말로 표현하면
+// 그 미묘한 차이가 훨씬 뚜렷하게 읽힌다.
+function matchLabel(pct: number): string {
+  if (pct >= 90) return "정말 잘 맞아요";
+  if (pct >= 70) return "잘 맞아요";
+  if (pct >= 50) return "어느 정도 맞아요";
+  return "일치도가 낮은 편이에요";
+}
+
+// 무드 컬러(--c)에 얹지 않고 구간마다 고정된 톤을 쓴다 — 종이 배경(#f6f1e8)과
+// 부딪히지 않게 채도를 낮춘 값으로 골랐다.
+function matchTierStyle(pct: number): CSSProperties {
+  if (pct >= 90) return { background: "#e5eddb", color: "#35640f" };
+  if (pct >= 70) return { background: "#ebe3d1", color: "#644429" };
+  if (pct >= 50) return { background: "#f0e5cd", color: "#7b490a" };
+  return { background: "#f2e1d7", color: "#8e361a" };
+}
+
 function ProductCard({
   product,
 }: {
   product: Extract<TranslateResponse, { status: "success" }>["products"][number];
 }) {
   const [imageError, setImageError] = useState(false);
+  const pct = Math.round((product.total_score / product.max_score) * 100);
 
   return (
     <a
@@ -444,7 +556,12 @@ function ProductCard({
         {product.product_name}
       </p>
       <p className="text-ink-soft mt-1.5 text-[0.8125rem] leading-[1.5]">{product.match_summary}</p>
-      <p className="text-ink-faint mt-2 text-[0.75rem]">매칭 점수 {product.total_score.toFixed(1)}점</p>
+      <span
+        className="mt-2 inline-block rounded-full px-2.5 py-1 text-[0.75rem] font-medium"
+        style={matchTierStyle(pct)}
+      >
+        {matchLabel(pct)}
+      </span>
     </a>
   );
 }
@@ -454,7 +571,7 @@ function AdjacentFallbackResult({
   onAdjacentClick,
 }: {
   response: Extract<TranslateResponse, { status: "adjacent_fallback" }>;
-  onAdjacentClick: (term: string) => void;
+  onAdjacentClick: (term: string, knownMatch?: MatchedTerm) => void;
 }) {
   return (
     <div className="mt-10">

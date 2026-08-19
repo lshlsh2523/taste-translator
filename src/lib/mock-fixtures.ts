@@ -76,6 +76,7 @@ const MOCK_SUCCESS: Extract<TranslateResponse, { status: "success" }> = {
       image: "https://images.mcmworldwide.com/i/mcmworldwide/MMKGSVE05BK001_01/MMKGSVE05BK001/stark-갤러틱-갈라-양가죽-백팩?$large$&fmt=auto&qlt=default",
       product_url: "https://kr.mcmworldwide.com/ko_KR/%EB%82%A8%EC%84%B1/%EA%B0%80%EB%B0%A9/%EB%B0%B1%ED%8C%A9/stark-%EA%B0%A4%EB%9F%AC%ED%8B%B1-%EA%B0%88%EB%9D%BC-%EC%96%91%EA%B0%80%EC%A3%BD-%EB%B0%B1%ED%8C%A9/MMKGSVE05BK001.html",
       primary_sku: "MMKGSVE05BK001",
+      max_score: 6,
     },
     {
       product_name: "fursten 맥시 모노그램 레더 벨트백",
@@ -92,6 +93,7 @@ const MOCK_SUCCESS: Extract<TranslateResponse, { status: "success" }> = {
       image: "https://images.mcmworldwide.com/i/mcmworldwide/MMZESFI01BK001_01/MMZESFI01BK001/fursten-맥시-모노그램-레더-벨트백?$large$&fmt=auto&qlt=default",
       product_url: "https://kr.mcmworldwide.com/ko_KR/%EB%82%A8%EC%84%B1/%EA%B0%80%EB%B0%A9/%EB%B2%A8%ED%8A%B8%EB%B0%B1/fursten-%EB%A7%A5%EC%8B%9C-%EB%AA%A8%EB%85%B8%EA%B7%B8%EB%9E%A8-%EB%A0%88%EB%8D%94-%EB%B2%A8%ED%8A%B8%EB%B0%B1/MMZESFI01BK001.html",
       primary_sku: "MMZESFI01BK001",
+      max_score: 6,
     },
     {
       product_name: "aren 다이아몬드 퀼팅 레더 크로스바디",
@@ -108,6 +110,7 @@ const MOCK_SUCCESS: Extract<TranslateResponse, { status: "success" }> = {
       image: "https://images.mcmworldwide.com/i/mcmworldwide/MMRGATA05BK001_01/MMRGATA05BK001/aren-다이아몬드-퀼팅-레더-크로스바디?$large$&fmt=auto&qlt=default",
       product_url: "https://kr.mcmworldwide.com/ko_KR/%EB%82%A8%EC%84%B1/%EA%B0%80%EB%B0%A9/%ED%81%AC%EB%A1%9C%EC%8A%A4%EB%B0%B1/aren-%EB%8B%A4%EC%9D%B4%EC%95%84%EB%AA%AC%EB%93%9C-%ED%80%BC%ED%8C%85-%EB%A0%88%EB%8D%94-%ED%81%AC%EB%A1%9C%EC%8A%A4%EB%B0%94%EB%94%94/MMRGATA05BK001.html",
       primary_sku: "MMRGATA05BK001",
+      max_score: 6,
     },
   ],
   allMatchedTerms: [

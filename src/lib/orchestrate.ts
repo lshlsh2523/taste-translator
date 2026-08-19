@@ -12,7 +12,11 @@
 import { findAdjacentTerms } from "@/lib/adjacent-terms";
 import { getCandidateProducts } from "@/lib/catalog";
 import { callStage1, callStage2 } from "@/lib/stages";
-import { resolveLinkedLuxuryTerms, resolveMaterialSignals } from "@/data/taste-library";
+import {
+  findTasteTermCardLoose,
+  resolveLinkedLuxuryTerms,
+  resolveMaterialSignals,
+} from "@/data/taste-library";
 import type {
   CandidateProduct,
   EnrichedRecommendedProduct,
@@ -59,6 +63,7 @@ function enrichProducts(
       image: candidate.image,
       product_url: candidate.product_url,
       primary_sku: candidate.primary_sku,
+      max_score: candidate.subcategory === NO_SHAPE_SUBCATEGORY ? 5 : 6,
     });
   }
   // 색상은 임계값 통과 여부(추천 대상인지)에는 영향을 안 주고, 이미
@@ -86,30 +91,83 @@ const STAGE2_RETRIES = 0;
 // 되면 인접 취향 폴백으로 넘어간다 — 할당량 절약을 위한 조정.
 const MAX_TERMS_TO_TRY = 2;
 
+// build-catalog.mjs의 NO_SHAPE_SUBCATEGORY와 동일한 값 — 형태 세분류가
+// 아예 없는 카테고리(테크액세서리 등)의 subcategory 표기.
+const NO_SHAPE_SUBCATEGORY = "(전체)";
+
+// 정식 매칭 임계값 — 2단계 프롬프트는 이제 채점만 하고 통과 여부는
+// 안 가른다(예전엔 모델이 임계값 미만 후보를 프롬프트 안에서 통째로
+// 버렸는데, 그러면 "취향은 맞는데 점수가 아쉬운 상품"이라는 정보 자체가
+// 사라져서 "이런 무드도 감지했어요" 카드를 눌렀을 때 아무 근거 없이
+// 실패 화면만 뜨는 문제가 있었다). 코드가 직접 점수를 보고 판단한다.
+function clearsThreshold(rec: RecommendedProduct, candidate: CandidateProduct): boolean {
+  const threshold = candidate.subcategory === NO_SHAPE_SUBCATEGORY ? 2.5 : 3;
+  return rec.total_score >= threshold;
+}
+
+type MatchOutcome =
+  | { outcome: "matched"; products: EnrichedRecommendedProduct[] }
+  // 임계값을 넘긴 상품은 없지만 채점 자체는 됐고, 점수가 가장 높았던
+  // 1~2개는 있다 — "정확힌 아니지만 그나마 가까운 상품"으로 보여줄 수 있음.
+  | { outcome: "below_threshold"; products: EnrichedRecommendedProduct[] }
+  // 후보 자체가 없거나(candidates.length === 0), 2단계가 채점 결과를
+  // 하나도 못 냈다(이미지 전부 실패 등) — 보여줄 게 아무것도 없는 경우.
+  | { outcome: "no_candidates" };
+
 async function tryMatchedTerm(
   matchedTerm: MatchedTerm,
   library: TasteLibrary,
   originalQuery?: string,
-): Promise<{ success: true; products: EnrichedRecommendedProduct[] } | { success: false }> {
+): Promise<MatchOutcome> {
   const tasteTermCard = library.tasteTerms.find((t) => t.term === matchedTerm.term);
-  if (!tasteTermCard) return { success: false };
+  if (!tasteTermCard) return { outcome: "no_candidates" };
 
   // matchedTerm.matching_keywords는 1단계 모델이 이번 사용자 입력을 보고
   // 그때그때 만들어낸 값(확정 프롬프트 출력 스키마) — 후보를 좁힐 때도
   // 정적 라이브러리 값 대신 이 동적 키워드를 우선 신호로 쓴다.
   const candidates = getCandidateProducts(tasteTermCard, matchedTerm.matching_keywords, library);
-  if (candidates.length === 0) return { success: false };
+  if (candidates.length === 0) return { outcome: "no_candidates" };
+  const byName = new Map(candidates.map((c) => [normalize(c.name), c]));
 
   for (let attempt = 0; attempt <= STAGE2_RETRIES; attempt++) {
     const stage2Result = await callStage2(matchedTerm, library, candidates, originalQuery);
-    if (stage2Result.no_product_match || stage2Result.recommended_products.length === 0) {
-      continue;
+    if (stage2Result.recommended_products.length === 0) continue;
+
+    const passing = stage2Result.recommended_products.filter((rec) => {
+      const candidate = byName.get(normalize(rec.product_name));
+      return candidate ? clearsThreshold(rec, candidate) : false;
+    });
+    if (passing.length > 0) {
+      const products = enrichProducts(passing, candidates);
+      if (products.length > 0) return { outcome: "matched", products };
     }
-    const products = enrichProducts(stage2Result.recommended_products, candidates);
-    if (products.length > 0) return { success: true, products };
+
+    // 임계값을 넘긴 게 없으면, 점수 순 상위 2개를 "낮은 일치도" 후보로
+    // 대신 챙겨둔다 — 이번 시도에서 아예 못 건진 건 아니니 재시도는 안
+    // 하고 바로 반환한다(재시도해도 이 판단 자체가 크게 바뀔 여지는 적음).
+    const top = enrichProducts(stage2Result.recommended_products, candidates)
+      .sort((a, b) => b.total_score - a.total_score)
+      .slice(0, 2);
+    if (top.length > 0) return { outcome: "below_threshold", products: top };
   }
 
-  return { success: false };
+  return { outcome: "no_candidates" };
+}
+
+// 1단계가 돌려준 term 문자열을 라이브러리의 정확한 표기로 맞춘다(느슨한
+// 매칭 — findTasteTermCardLoose 참고). 라이브러리 어떤 카드에도 못
+// 맞추면(오타가 너무 심하거나 정말 라이브러리에 없는 용어를 지어낸
+// 경우) 그 항목은 버린다 — 못 찾은 카드를 억지로 쓰기보다, 존재하는
+// 취향 용어로 정직하게 좁히는 쪽을 택한다. 이후 파이프라인 전체가 이
+// 정규화된 term 문자열만 다루므로, 뒤에서 또 완전 일치를 걱정할 필요가
+// 없다.
+function normalizeMatchedTerms(terms: MatchedTerm[], library: TasteLibrary): MatchedTerm[] {
+  const normalized: MatchedTerm[] = [];
+  for (const t of terms) {
+    const card = findTasteTermCardLoose(t.term, library);
+    if (card) normalized.push({ ...t, term: card.term });
+  }
+  return normalized;
 }
 
 export async function orchestrateTranslate(
@@ -117,8 +175,9 @@ export async function orchestrateTranslate(
   library: TasteLibrary,
 ): Promise<TranslateResponse> {
   const stage1Result = await callStage1(query, library);
+  const matchedTerms = normalizeMatchedTerms(stage1Result.matched_terms, library);
 
-  if (stage1Result.matched_terms.length === 0) {
+  if (matchedTerms.length === 0) {
     return {
       status: "no_match",
       query,
@@ -126,13 +185,18 @@ export async function orchestrateTranslate(
     };
   }
 
-  const sortedTerms = [...stage1Result.matched_terms].sort((a, b) => b.confidence - a.confidence);
+  const sortedTerms = [...matchedTerms].sort((a, b) => b.confidence - a.confidence);
   const termsToTry = sortedTerms.slice(0, MAX_TERMS_TO_TRY);
 
   for (let i = 0; i < termsToTry.length; i++) {
     const matchedTerm = sortedTerms[i];
     const result = await tryMatchedTerm(matchedTerm, library, query);
-    if (result.success) {
+    // 원 검색(1순위/2순위 시도)에서는 기존처럼 정식으로 임계값을 넘긴
+    // 경우("matched")만 성공으로 치고, 그 외("below_threshold" 포함)는
+    // 다음 순위 용어를 마저 시도하거나 인접 취향 폴백으로 넘어간다 —
+    // "낮은 일치도 후보 보여주기"는 아래 retryWithTerm(카드 재검색)
+    // 경로에서만 쓴다.
+    if (result.outcome === "matched") {
       const tasteTermCard = library.tasteTerms.find((t) => t.term === matchedTerm.term) ?? null;
       return {
         status: "success",
@@ -168,45 +232,68 @@ export async function orchestrateTranslate(
   };
 }
 
-// 인접 취향 카드 클릭 시: 그 취향 용어로 2단계부터 다시 실행 (1단계 재실행
-// 없음). 성공/실패 결과만 반환하고, 실패 시 또 다른 인접 취향 폴백으로
-// 이어가지 않는다 — 이미 인접 취향 폴백 단계에 있으므로 여기서 또 실패하면
-// 사용자가 다른 카드를 고르게 하는 게 UX상 맞다(설계 문서 4-3 참고).
+// 카드 클릭 시: 그 취향 용어로 2단계부터 다시 실행 (1단계 재실행 없음).
+// 성공/실패 결과만 반환하고, 실패 시 또 다른 인접 취향 폴백으로 이어가지
+// 않는다 — 이미 인접 취향 폴백 단계에 있으므로 여기서 또 실패하면 사용자가
+// 다른 카드를 고르게 하는 게 UX상 맞다(설계 문서 4-3 참고).
+//
+// knownMatch: "이런 무드도 감지했어요" 카드처럼, 원래 검색의 1단계가 이미
+// 이 용어를 채점해둔 적이 있으면(진짜 reason/confidence 보유) 그대로
+// 넘겨받는다 — 다시 지어내지 않고 그 값을 그대로 쓴다. "인접 취향" 카드처럼
+// 1단계가 애초에 이 용어를 본 적 없는 경로는 knownMatch가 없어서, 2단계
+// 호출에 필요한 최소한의 값(신뢰 등급/소재 키워드)만 합성하고
+// matchedTermIsSynthetic: true로 표시해 화면이 가짜 근거를 안 보여주게 한다.
+//
+// knownMoodColor/knownMoodEmoji: 같은 이유로, 원래 검색의 1단계가 이미
+// 뽑아둔 무드 색/이모지를 재사용한다 — "이런 무드도 감지했어요" 카드는
+// 같은 1단계 호출에서 나온 형제 용어라 원래 무드를 그대로 써도 자연스럽고,
+// 이걸 위해 1단계를 다시 부를 필요가 없다(2단계 스키마에 mood 필드가
+// 없어서 어차피 새로 뽑을 수도 없다).
 export async function retryWithTerm(
   termName: string,
   library: TasteLibrary,
   originalQuery?: string,
+  knownMatch?: MatchedTerm,
+  knownMoodColor?: string,
+  knownMoodEmoji?: string,
 ): Promise<TranslateResponse> {
   const tasteTermCard = library.tasteTerms.find((t) => t.term === termName);
   if (!tasteTermCard) {
     return { status: "no_match", query: termName, reason: "라이브러리에 없는 취향 용어입니다." };
   }
 
-  // 이 경로는 1단계 모델을 다시 부르지 않으므로 matching_keywords를
-  // 동적으로 만들어낼 수 없다 — 취향 카드에 연결된 소재 신호로 대신한다.
-  // originalQuery(직전 검색 원문)가 남아있으면 색상 신호 판단용으로
-  // 2단계에 그대로 넘겨준다 — 없으면(순수 카드 클릭) 생략.
-  const syntheticMatchedTerm: MatchedTerm = {
-    term: tasteTermCard.term,
-    trust_level: tasteTermCard.trust_level,
-    reason: "인접 취향 카드에서 직접 선택됨",
-    matching_keywords: resolveMaterialSignals(tasteTermCard, library),
-    confidence: 1,
-  };
+  const isSynthetic = !knownMatch || knownMatch.term !== termName;
+  const matchedTerm: MatchedTerm = isSynthetic
+    ? {
+        term: tasteTermCard.term,
+        trust_level: tasteTermCard.trust_level,
+        reason: "",
+        matching_keywords: resolveMaterialSignals(tasteTermCard, library),
+        confidence: 0,
+      }
+    : knownMatch;
 
-  const result = await tryMatchedTerm(syntheticMatchedTerm, library, originalQuery);
-  if (result.success) {
+  const result = await tryMatchedTerm(matchedTerm, library, originalQuery);
+  // "matched"(정식 통과)든 "below_threshold"(정식 통과는 없지만 그나마
+  // 가까운 상품 1~2개는 있음)든, 용어 자체는 확정된 것이니 유래/특징/
+  // 패션 용어는 그대로 보여준다 — 예전에는 below_threshold에 해당하는
+  // 경우를 no_match로 뭉뚱그려서 이 정보까지 통째로 날렸었다.
+  if (result.outcome === "matched" || result.outcome === "below_threshold") {
     return {
       status: "success",
       query: termName,
-      matchedTerm: syntheticMatchedTerm,
+      matchedTerm,
       matchedTermOrigins: { [tasteTermCard.term]: tasteTermCard.origin },
       matchedTermHistory: tasteTermCard.history,
       matchedTermCharacteristics: tasteTermCard.description,
+      matchedTermIsSynthetic: isSynthetic,
       usedFallbackRank: 0,
       luxuryTerms: resolveLinkedLuxuryTerms(tasteTermCard, library),
       products: result.products,
-      allMatchedTerms: [syntheticMatchedTerm],
+      allMatchedTerms: [matchedTerm],
+      moodColor: sanitizeMoodColor(knownMoodColor),
+      moodEmoji: knownMoodEmoji,
+      belowThreshold: result.outcome === "below_threshold",
     };
   }
 

@@ -68,6 +68,35 @@ const MATERIAL_KEYWORD_MAP = [
   ["드로우스트링", ["드로우스트링"]],
 ];
 
+// "미니백"은 name_slug(URL 기반)에 사이즈 정보가 아예 없어서 위
+// MATERIAL_KEYWORD_MAP 방식(슬러그 텍스트 매칭)으로는 추출이 불가능하다.
+// 대신 MCM 실제 미니백 필터 페이지(kr.mcmworldwide.com/ko_KR/가방/미니백)를
+// 직접 열어 "미니"/"엑스트라 미니" 표기가 붙은 상품만 골라 SKU로
+// 확인했다(2026-08-19, 76개 중 53개 — 나머지는 지갑/랜야드처럼 사이즈
+// 라벨만 있고 "미니"라는 표기는 없는 액세서리라 제외). 이 SKU 목록에
+// 속한 행은 material_keywords에 "미니"를 강제로 추가한다.
+const MINI_BAG_SKUS = new Set([
+  "MWDGADU01CO001", "MWDGADU03BK001", "MMLGATA04CO001", "MWRGATA01BK001",
+  "MWRGSTA02CO001", "MWRGSTA02PZ001", "MWRGSTA01BK001", "MWRGSTA01OQ001",
+  "MWRGSTA01QA001", "MWRGSXT01CO001", "MWRGSXT01BK001", "MWREATA01CO001",
+  "MWRGSTA03BK001", "MYZGATA05CO001", "MYLFATA03CO001", "MYLFATA03PZ001",
+  "MYLGSTA02BK001", "MWPGSMT024B001", "MWPGSMT02WT001", "MWPAATN04CO001",
+  "MWPAATN04BK001", "MWPFSMT06PZ001", "MWPFAMT08K8001", "MWPAATN04I8001",
+  "MWPGSMT04BK001", "MWPGSMT03WT001", "MWPFSMT03PZ001", "MWPFSMT03BK001",
+  "MWBESEA01CO001", "MWBESEA01BK001", "MWBESEA01PZ001", "MMMEATA02CO001",
+  "MMMEATA02BK001", "MMMEATA02K8001", "MMRESKK02VC001", "MMRESKK02BK001",
+  "MMTGSTA04CO001", "MMTGSTA04BK001", "MYZGATA01CO001", "MYZGATA01BK001",
+  "MMLGSTA03BK001", "MMLFSTA07BK001", "MWRESAK02CO001", "MWRGAAK01BK001",
+  "MWRESAK01BK001", "MMRAAKC03CO001", "MWRAAVI01CO001", "MWPESAC04BK001",
+  "MWPFSTA04BK001", "MWDESAC03DG001", "MWRGAXT01PZ001", "MMLGATA05K8001",
+  "MWBAASE03CO001",
+]);
+
+function isMiniBag(row) {
+  const skus = [row.primary_sku, ...row.color_variant_skus.split(";")];
+  return skus.some((sku) => MINI_BAG_SKUS.has(sku));
+}
+
 function parseCsv(text) {
   const lines = text.replace(/^﻿/, "").split(/\r?\n/).filter(Boolean);
   const header = lines[0].split(",");
@@ -127,6 +156,7 @@ const catalog = rows.map((row) => {
   if (subcategory === NO_SHAPE_SUBCATEGORY) notes.noShapeSubcategoryCount += 1;
 
   const materialKeywords = extractMaterialKeywords(row.name_slug);
+  if (isMiniBag(row)) materialKeywords.push("미니");
   if (materialKeywords.length > 0) notes.withMaterialKeywords += 1;
 
   return {
