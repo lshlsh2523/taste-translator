@@ -695,23 +695,48 @@ function AdjacentFallbackResult({
           href="/search"
           className="bg-ink text-paper hover:bg-transparent hover:text-ink focus-visible:outline-ink rounded-full px-7 py-3.5 text-[1rem] transition-colors duration-200 hover:outline hover:outline-1 hover:outline-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         >
-          새로운 취향 검색하기
+          다른 취향으로 다시 찾기
         </Link>
       </div>
     </div>
   );
 }
 
+// moodColor를 못 받는 경로(1단계가 아예 매칭을 못 했을 때는 무드도 안 뽑힘)라
+// mood-scope 인라인 --c 오버라이드 없이 기본 액센트 색으로 고정 사용한다 —
+// 그래도 코칭 카드가 완전히 무채색이 아니라 은은한 톤을 갖게 하기 위함.
 function NoMatchResult({ reason }: { reason: string }) {
   return (
-    <div className="mt-16 flex flex-col items-center gap-6 py-16 text-center">
-      <p className="text-ink text-[1.0625rem] leading-[1.6]">{reason}</p>
-      <Link
-        href="/search"
-        className="bg-ink text-paper hover:bg-transparent hover:text-ink focus-visible:outline-ink rounded-full px-7 py-3.5 text-[1rem] transition-colors duration-200 hover:outline hover:outline-1 hover:outline-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+    <div className="mood-scope mt-10">
+      <div className="border-hairline border-t pt-10">
+        <h1 className="font-headline text-ink text-[1.375rem] font-bold leading-[1.35] sm:text-[1.5rem]">
+          {reason}
+        </h1>
+        <p className="text-ink-soft mt-4 text-[1.0625rem] leading-[1.6]">
+          지금은 없지만, 취향 용어와 상품은 계속 추가하고 있어요.
+        </p>
+      </div>
+
+      <div
+        className="mt-16 rounded-2xl p-7"
+        style={{ background: "color-mix(in oklab, var(--c) 8%, var(--color-paper))" }}
       >
-        다른 취향으로 다시 찾기
-      </Link>
+        <p className="text-[1.0625rem] font-medium" style={{ color: "var(--ct)" }}>
+          이렇게 검색해보면 어때요?
+        </p>
+        <p className="text-ink-soft mt-2 text-[1rem] leading-[1.65]">
+          색·소재·형태를 더 구체적으로 적어서 다시 검색해보면 더 잘 맞는 취향을 찾을 수도 있어요.
+        </p>
+      </div>
+
+      <div className="mt-24 flex justify-center">
+        <Link
+          href="/search"
+          className="bg-ink text-paper hover:bg-transparent hover:text-ink focus-visible:outline-ink rounded-full px-7 py-3.5 text-[1rem] transition-colors duration-200 hover:outline hover:outline-1 hover:outline-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          다른 취향으로 다시 찾기
+        </Link>
+      </div>
     </div>
   );
 }
