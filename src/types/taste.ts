@@ -191,6 +191,11 @@ export type TranslateAdjacentFallback = {
   query: string;
   allMatchedTerms: MatchedTerm[];
   adjacentTerms: AdjacentTasteCard[];
+  // 1단계가 이번 검색에 대해 이미 뽑아둔 무드 색·이모지 — 제품 매칭엔
+  // 실패했지만 취향 매칭 자체는 됐으므로 그때 뽑힌 색을 그대로 재사용한다
+  // (성공 화면과 같은 필드, 같은 이유로 optional).
+  moodColor?: string;
+  moodEmoji?: string;
 };
 
 export type TranslateNoMatch = {

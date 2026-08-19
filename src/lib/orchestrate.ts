@@ -222,6 +222,8 @@ export async function orchestrateTranslate(
       query,
       allMatchedTerms: sortedTerms,
       adjacentTerms,
+      moodColor: sanitizeMoodColor(stage1Result.mood_color),
+      moodEmoji: stage1Result.mood_emoji,
     };
   }
 

@@ -619,26 +619,84 @@ function AdjacentFallbackResult({
   response: Extract<TranslateResponse, { status: "adjacent_fallback" }>;
   onAdjacentClick: (term: string, knownMatch?: MatchedTerm) => void;
 }) {
+  const { moodColor, moodEmoji } = response;
   return (
-    <div className="mt-10">
-      <h1 className="font-headline text-ink text-[1.5rem] font-bold leading-[1.3] sm:text-[1.75rem]">
-        정확히 맞는 제품은 없지만, 이런 취향은 어떠세요?
-      </h1>
+    <div
+      className="mood-scope mt-10"
+      style={moodColor ? ({ "--c": moodColor } as CSSProperties) : undefined}
+    >
+      <div className="border-hairline border-t pt-8">
+        <h1 className="font-headline text-ink flex items-center gap-2 text-[1.5rem] font-bold leading-[1.3] sm:text-[1.75rem]">
+          {moodEmoji && (
+            <span aria-hidden="true" className="text-[1.25rem]">
+              {moodEmoji}
+            </span>
+          )}
+          정확히 맞는 제품은 없지만, 이런 취향은 어떠세요?
+        </h1>
+      </div>
       <div className="mt-6 flex flex-col gap-3">
         {response.adjacentTerms.map((card) => (
           <button
             key={card.term}
             type="button"
             onClick={() => onAdjacentClick(card.term)}
-            className="border-hairline hover:border-ink text-left transition-colors border p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            className="group border-hairline hover:border-ink flex items-center gap-4 text-left transition-colors border p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            style={{ background: "color-mix(in oklab, var(--c) 5%, var(--color-paper))" }}
           >
-            <p className="text-ink font-headline text-[1.125rem] font-bold">{card.term}</p>
-            <p className="text-ink-soft mt-1.5 text-[0.8125rem] leading-[1.5]">{card.origin}</p>
-            <p className="text-ink-faint mt-1.5 text-[0.75rem]">
-              겹치는 럭셔리 용어: {card.shared_luxury_terms.join(", ")}
-            </p>
+            <div className="flex-1">
+              <p className="text-ink font-headline text-[1.125rem] font-bold">{card.term}</p>
+              <p className="text-ink-soft mt-1.5 text-[0.8125rem] leading-[1.5]">{card.origin}</p>
+              {card.shared_luxury_terms.length > 0 && (
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  {card.shared_luxury_terms.map((term) => (
+                    <span
+                      key={term}
+                      className="rounded-full px-2.5 py-0.5 text-[0.6875rem]"
+                      style={{
+                        background: "color-mix(in oklab, var(--c) 14%, var(--color-paper))",
+                        color: "var(--ct)",
+                      }}
+                    >
+                      {term}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <span
+              aria-hidden="true"
+              className="text-ink-faint group-hover:text-ink shrink-0 text-lg transition-colors"
+            >
+              →
+            </span>
           </button>
         ))}
+      </div>
+
+      <div className="border-hairline mt-12 border-t pt-8">
+        <div
+          className="rounded-2xl p-5"
+          style={{
+            background: "color-mix(in oklab, var(--c) 8%, var(--color-paper))",
+          }}
+        >
+          <p className="text-[0.875rem] font-medium" style={{ color: "var(--ct)" }}>
+            이렇게 검색해보면 어때요?
+          </p>
+          <p className="text-ink-soft mt-1.5 text-[0.8125rem] leading-[1.6]">
+            색·소재·형태를 더 구체적으로 적어서 다시 검색하면 더 잘 맞는 결과를 찾을 수도 있어요.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-20 flex justify-center">
+        <Link
+          href="/search"
+          className="bg-ink text-paper hover:bg-transparent hover:text-ink focus-visible:outline-ink rounded-full px-7 py-3.5 text-[1rem] transition-colors duration-200 hover:outline hover:outline-1 hover:outline-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          새로운 취향 검색하기
+        </Link>
       </div>
     </div>
   );

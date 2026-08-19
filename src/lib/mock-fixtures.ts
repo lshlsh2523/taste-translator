@@ -173,6 +173,8 @@ const MOCK_ADJACENT: Extract<TranslateResponse, { status: "adjacent_fallback" }>
       shared_luxury_terms: ["탑 핸들 백 (Top Handle Bag)"],
     },
   ],
+  moodColor: "#6b4a2f",
+  moodEmoji: "🤎",
 };
 
 const MOCK_NO_MATCH: Extract<TranslateResponse, { status: "no_match" }> = {
