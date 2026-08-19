@@ -115,7 +115,7 @@ export function SearchForm() {
             </Link>
           </div>
 
-          <div className="px-6 pt-8 sm:px-10 lg:px-16 lg:pt-12">
+          <div className="px-6 pt-24 sm:px-10 sm:pt-28 lg:px-16 lg:pt-32">
             <h1 className="reveal reveal-1 font-headline text-ink mx-auto w-full max-w-[920px] text-center text-[2rem] leading-[1.3] font-bold tracking-[-0.01em] sm:text-[2.5rem] lg:text-[2.75rem] xl:text-[3.125rem]">
               어떤 분위기를 가지고 싶으신가요?
             </h1>
@@ -141,7 +141,7 @@ export function SearchForm() {
                     onChange={(e) => setValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     rows={3}
-                    placeholder="원하는 느낌을 문장으로 설명해주세요"
+                    placeholder="색, 소재, 분위기 등 원하는 느낌을 설명해주세요"
                     className="border-hairline text-ink placeholder:text-ink-faint focus:border-ink/30 w-full resize-none rounded-[28px] border bg-white px-7 py-5 pr-20 text-[1.125rem] leading-[1.6] shadow-[0_16px_40px_-20px_rgba(33,29,24,0.28)] transition-colors outline-none sm:text-[1.1875rem]"
                   />
                   <button
