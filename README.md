@@ -16,8 +16,10 @@
 
 예를 들어 "단정하고 지적인 분위기"라고 입력하면, 취향 용어 **비즈니스 캐주얼**로 번역되어 유래·특징·판단 근거·일치도와 함께 제시되고, 연결된 패션 용어(탑 핸들 백, 사첼 백, 엠보스드 등)를 거쳐 실제 MCM 제품으로 연결됩니다. 배포된 서비스에서 실제로 나온 결과입니다.
 
-![취향 용어 결과 화면](docs/screenshots/result-term.png)
-![매칭된 상품 화면](docs/screenshots/result-products.png)
+<p align="center">
+  <img src="docs/screenshots/result-term.png" width="48%" alt="취향 용어 결과 화면" />
+  <img src="docs/screenshots/result-products.png" width="48%" alt="매칭된 상품 화면" />
+</p>
 
 ## 왜 이렇게 만들었나
 
