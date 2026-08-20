@@ -99,8 +99,7 @@ export function SearchForm() {
   };
 
   const insertStarter = (fragment: string) => {
-    const current = value.trimEnd();
-    const next = current.length > 0 ? `${current} ${fragment} ` : `${fragment} `;
+    const next = `${fragment} `;
     setValue(next);
     setTimeout(() => {
       const el = textareaRef.current;
