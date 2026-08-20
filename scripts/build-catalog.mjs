@@ -97,6 +97,25 @@ function isMiniBag(row) {
   return skus.some((sku) => MINI_BAG_SKUS.has(sku));
 }
 
+// 실제 브라우저로 하나씩 열어봐서 상세 페이지가 사라지고 카테고리 목록
+// 페이지로 리다이렉트되는 걸 확인한 SKU들. 자동 스크립트로 657개 전체를
+// 검증하려니 MCM 사이트가 봇 요청은 무조건 403으로 막아버려서(실제 살아있는
+// 상품도 403 뜸 — 브라우저로 열면 정상 동작), 해커톤 제출 전 시연에 실제로
+// 등장하는 상품 위주로 수동 확인하며 하나씩 추가하는 목록이다. 삭제하지
+// 않고 후보에서만 제외하는 이유는 "657개 수집"이라는 카탈로그 크기 자체는
+// 사실이라 그대로 유지하고 싶어서.
+const DEAD_LINK_SKUS = new Set([
+  "MWPFSTA02CK001", // aren 나파 가죽 쇼퍼 — 카테고리 목록으로 리다이렉트됨 (2026-08-21 확인)
+  "MWPFSTA03WT001", // 모노그램 프린트 가죽 소재의 aren 쇼퍼 — 카테고리 목록으로 리다이렉트됨 (2026-08-21 확인)
+  "MWPGSTA02BK001", // aren 비세토스 레더 믹스 쇼퍼 — 카테고리 목록으로 리다이렉트됨 (2026-08-21 확인)
+  "MWTDABO14BK001", // münchen 맥시 모노그램 레더 토트 — 카테고리 목록으로 리다이렉트됨 (2026-08-21 확인)
+]);
+
+function isDeadLink(row) {
+  const skus = [row.primary_sku, ...row.color_variant_skus.split(";")];
+  return skus.some((sku) => DEAD_LINK_SKUS.has(sku));
+}
+
 function parseCsv(text) {
   const lines = text.replace(/^﻿/, "").split(/\r?\n/).filter(Boolean);
   const header = lines[0].split(",");
@@ -169,6 +188,7 @@ const catalog = rows.map((row) => {
     product_url: row.product_url,
     primary_sku: row.primary_sku,
     num_colors: Number(row.num_colors) || 1,
+    ...(isDeadLink(row) ? { unavailable: true } : {}),
   };
 });
 

@@ -96,6 +96,10 @@ export type CandidateProduct = {
   product_url: string;
   primary_sku: string;
   num_colors: number;
+  // 실제 브라우저로 확인해서 상세 페이지가 사라진(카테고리 목록으로
+  // 리다이렉트되는) 게 확인된 상품 — true면 후보에서 아예 제외한다.
+  // scripts/build-catalog.mjs의 DEAD_LINK_SKUS 참고.
+  unavailable?: boolean;
 };
 
 export type MatchBreakdown = {

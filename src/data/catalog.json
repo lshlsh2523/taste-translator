@@ -6617,7 +6617,8 @@
     "image": "https://images.mcmworldwide.com/i/mcmworldwide/MWPFSTA02CK001_01/MWPFSTA02CK001/aren-나파-가죽-쇼퍼?$large$&fmt=auto&qlt=default",
     "product_url": "https://kr.mcmworldwide.com/ko_KR/%EC%97%AC%EC%84%B1/%ED%95%B8%EB%93%9C%EB%B0%B1/%EC%87%BC%ED%8D%BC-%ED%86%A0%ED%8A%B8%EB%B0%B1/aren-%EB%82%98%ED%8C%8C-%EA%B0%80%EC%A3%BD-%EC%87%BC%ED%8D%BC/MWPFSTA02CK001.html",
     "primary_sku": "MWPFSTA02CK001",
-    "num_colors": 1
+    "num_colors": 1,
+    "unavailable": true
   },
   {
     "name": "모노그램 프린트 가죽 소재의 aren 쇼퍼",
@@ -6632,7 +6633,8 @@
     "image": "https://images.mcmworldwide.com/i/mcmworldwide/MWPFSTA03WT001_01/MWPFSTA03WT001/모노그램-프린트-가죽-소재의-aren-쇼퍼?$large$&fmt=auto&qlt=default",
     "product_url": "https://kr.mcmworldwide.com/ko_KR/%EC%97%AC%EC%84%B1/%ED%95%B8%EB%93%9C%EB%B0%B1/%EC%87%BC%ED%8D%BC-%ED%86%A0%ED%8A%B8%EB%B0%B1/%EB%AA%A8%EB%85%B8%EA%B7%B8%EB%9E%A8-%ED%94%84%EB%A6%B0%ED%8A%B8-%EA%B0%80%EC%A3%BD-%EC%86%8C%EC%9E%AC%EC%9D%98-aren-%EC%87%BC%ED%8D%BC/MWPFSTA03WT001.html",
     "primary_sku": "MWPFSTA03WT001",
-    "num_colors": 1
+    "num_colors": 1,
+    "unavailable": true
   },
   {
     "name": "재생 나일론 및 모노그램 프린트 가죽 소재의 aren 쇼퍼",
@@ -6663,7 +6665,8 @@
     "image": "https://images.mcmworldwide.com/i/mcmworldwide/MWPGSTA02BK001_01/MWPGSTA02BK001/aren-비세토스-레더-믹스-쇼퍼?$large$&fmt=auto&qlt=default",
     "product_url": "https://kr.mcmworldwide.com/ko_KR/%EC%97%AC%EC%84%B1/%ED%95%B8%EB%93%9C%EB%B0%B1/%EC%87%BC%ED%8D%BC-%ED%86%A0%ED%8A%B8%EB%B0%B1/aren-%EB%B9%84%EC%84%B8%ED%86%A0%EC%8A%A4-%EB%A0%88%EB%8D%94-%EB%AF%B9%EC%8A%A4-%EC%87%BC%ED%8D%BC/MWPGSTA02BK001.html",
     "primary_sku": "MWPGSTA02BK001",
-    "num_colors": 4
+    "num_colors": 4,
+    "unavailable": true
   },
   {
     "name": "aren 비세토스 버킷 토트",
@@ -6863,7 +6866,8 @@
     "image": "https://images.mcmworldwide.com/i/mcmworldwide/MWTDABO14BK001_01/MWTDABO14BK001/münchen-맥시-모노그램-레더-토트?$large$&fmt=auto&qlt=default",
     "product_url": "https://kr.mcmworldwide.com/ko_KR/%EC%97%AC%EC%84%B1/%ED%95%B8%EB%93%9C%EB%B0%B1/%EC%87%BC%ED%8D%BC-%ED%86%A0%ED%8A%B8%EB%B0%B1/m%C3%BCnchen-%EB%A7%A5%EC%8B%9C-%EB%AA%A8%EB%85%B8%EA%B7%B8%EB%9E%A8-%EB%A0%88%EB%8D%94-%ED%86%A0%ED%8A%B8/MWTDABO14BK001.html",
     "primary_sku": "MWTDABO14BK001",
-    "num_colors": 1
+    "num_colors": 1,
+    "unavailable": true
   },
   {
     "name": "münchen 비세토스 토트",

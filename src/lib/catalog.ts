@@ -55,7 +55,7 @@ export function getCandidateProducts(
   });
 
   return scored
-    .filter((s) => s.relevance > 0)
+    .filter((s) => s.relevance > 0 && !s.product.unavailable)
     .sort((a, b) => b.relevance - a.relevance)
     .slice(0, limit)
     .map((s) => s.product);
