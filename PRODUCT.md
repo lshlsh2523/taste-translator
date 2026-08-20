@@ -15,7 +15,7 @@ Korean consumers in their 20s making their first move from mass-market fashion i
 The user types a free-text description of a vibe/aesthetic they're after. The product translates that description into:
 
 1. Taste vocabulary cards naming the aesthetic.
-2. The corresponding luxury industry term with its origin (e.g. satchel, hobo, slouch).
+2. The corresponding luxury industry term with its origin (e.g. satchel, hobo, bucket).
 3. Actual MCM products that match, pulled from a fixed catalogue — never invented.
 
 Success ends at a shareable result card with a link to the real product page. The product succeeds when a user who couldn't search for what they wanted walks away with the correct term and a real product to look at.
