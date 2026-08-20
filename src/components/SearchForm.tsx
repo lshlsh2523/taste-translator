@@ -15,6 +15,12 @@ const STARTERS = [
   "무심하고 차분한…",
 ];
 
+// 데모 녹화용: 이 스타터만 버튼 문구는 그대로 두고, 클릭 시 완성된
+// 문장이 채워지게 한다. 나머지는 원래대로 짧은 fragment만 삽입.
+const STARTER_FILL: Record<string, string> = {
+  "조용한데 눈에 띄는…": "조용한데 눈에 띄는, 돈 많아 보이지만 그게 티나지는 않는 분위기",
+};
+
 // 실제 백엔드는 2단계(이미지 비전 채점)에서 40~70초가 걸릴 수 있어서
 // (Gemini 무료 티어 기준), 단계 전환·"조금만 더 기다려주세요" 문구
 // 타이밍을 실측 소요 시간에 맞춰 늘림 — mock 시절의 5.2초 기준값이
@@ -163,7 +169,7 @@ export function SearchForm() {
                     <button
                       key={fragment}
                       type="button"
-                      onClick={() => insertStarter(fragment)}
+                      onClick={() => insertStarter(STARTER_FILL[fragment] ?? fragment)}
                       className="border-hairline text-ink-soft hover:border-ink hover:text-ink shrink-0 rounded-full border bg-white px-4 py-2.5 text-[0.9375rem] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:text-base"
                     >
                       {fragment}
