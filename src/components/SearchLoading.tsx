@@ -10,7 +10,7 @@ const FRAMES = [
   "/images/cat-4.png",
 ];
 
-const STAGES = ["취향을 읽는 중", "용어를 찾는 중", "제품과 맞춰보는 중"];
+export const STAGES = ["취향을 읽는 중", "용어를 찾는 중", "제품과 맞춰보는 중"];
 
 const FRAME_INTERVAL_MS = 200; // 0.8s cycle / 4 frames (half speed)
 
