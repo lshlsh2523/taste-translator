@@ -183,6 +183,105 @@ const MOCK_NO_MATCH: Extract<TranslateResponse, { status: "no_match" }> = {
   reason: "죄송해요, 지금 라이브러리로는 이 취향에 맞는 제품을 찾기 어려워요.",
 };
 
+// MOCK_ADJACENT의 "올드머니 룩" 카드를 클릭했을 때 보여줄 화면 — 실제
+// retryWithTerm처럼 below_threshold(취향 용어는 잘 맞지만 제품 일치도는
+// 기준 미달)를 재현해서, 인접 카드 클릭 흐름을 로컬에서 녹화용으로
+// 확인할 수 있게 한다.
+const MOCK_OLDMONEY: Extract<TranslateResponse, { status: "success" }> = {
+  status: "success",
+  query: "올드머니 룩 (Old Money)",
+  matchedTerm: {
+    term: "올드머니 룩 (Old Money)",
+    trust_level: "통용어",
+    reason: "",
+    matching_keywords: ["브라운", "베이지", "꼬냑", "가죽", "클래식한 로고"],
+    confidence: 0,
+  },
+  matchedTermOrigins: {
+    "올드머니 룩 (Old Money)": "대대로 부유한 상류층의 절제되고 클래식한 옷차림을 지칭",
+  },
+  matchedTermHistory:
+    "여러 세대에 걸쳐 부를 물려받은 유럽·미국 상류층을 가리키던 말로, 아이비리그 프레피 문화의 절제된 옷차림 전통이 이어져오다 2022~2023년 무렵 SNS에서 '올드머니 에스테틱(Old Money Aesthetic)' 해시태그로 확산되며 대중적인 패션 트렌드 용어로 자리잡았다.",
+  matchedTermCharacteristics: "브랜드 로고를 드러내지 않는 고급 소재와 단정한 핏이 핵심이며 은은한 부유함을 표현",
+  matchedTermIsSynthetic: true,
+  moodColor: "#6b4a2f",
+  moodEmoji: "🤎",
+  usedFallbackRank: 0,
+  belowThreshold: true,
+  luxuryTerms: [
+    {
+      term: "탑 핸들 백 (Top Handle Bag)",
+      origin: "짧은 손잡이로 손에 들거나 팔에 거는 방식, 격식 있고 단정한 인상",
+      kind: "shape",
+      matching_mood: ["오피스룩", "포멀함"],
+      mcm_subcategory: ["탑-핸들백"],
+    },
+    {
+      term: "쇼퍼 & 토트 백 (Shopper & Tote)",
+      origin: "\"나르다(tote)\"라는 뜻에서 유래, 개방형 상단과 넉넉한 수납공간이 특징",
+      kind: "shape",
+      matching_mood: ["실용적", "데일리 캐주얼"],
+      mcm_subcategory: ["쇼퍼-토트백"],
+    },
+    {
+      term: "헤링본",
+      origin: "청어(herring)의 뼈 모양을 닮은 V자 지그재그 직조 패턴",
+      kind: "material",
+      matching_mood: ["클래식", "정교함"],
+      material_keywords: ["헤링본"],
+    },
+  ],
+  products: [
+    {
+      product_name: "ella 맥시 모노그램 레더 보스턴 백",
+      total_score: 2,
+      match_summary: "이 취향과 겹치는 지점: 소재(가죽), 클래식한 실루엣",
+      match_breakdown: {
+        shape_match: false,
+        material_match: ["가죽"],
+        visual_match_score: 1,
+        visual_match_reason: "모노그램이 다소 눈에 띄어 절제된 올드머니 무드와는 살짝 거리가 있습니다.",
+        color_match: true,
+        color_reason: "사용자가 특정 색상을 언급하지 않았습니다.",
+      },
+      image:
+        "https://images.mcmworldwide.com/i/mcmworldwide/MWBESEA04BK001_01/MWBESEA04BK001/ella-맥시-모노그램-레더-보스턴-백?$large$&fmt=auto&qlt=default",
+      product_url:
+        "https://kr.mcmworldwide.com/ko_KR/%EC%97%AC%EC%84%B1/%ED%95%B8%EB%93%9C%EB%B0%B1/%ED%83%91-%ED%95%B8%EB%93%A4%EB%B0%B1/ella-%EB%A7%A5%EC%8B%9C-%EB%AA%A8%EB%85%B8%EA%B7%B8%EB%9E%A8-%EB%A0%88%EB%8D%94-%EB%B3%B4%EC%8A%A4%ED%84%B4-%EB%B0%B1/MWBESEA04BK001.html",
+      primary_sku: "MWBESEA04BK001",
+      max_score: 6,
+    },
+    {
+      product_name: "aren ECONYL®과 가죽 마마 쇼퍼",
+      total_score: 2,
+      match_summary: "이 취향과 겹치는 지점: 형태(쇼퍼백), 소재(가죽)",
+      match_breakdown: {
+        shape_match: true,
+        material_match: ["가죽"],
+        visual_match_score: 1,
+        visual_match_reason: "쇼퍼백 실루엣은 클래식하지만, 캐주얼한 소재감이 올드머니 특유의 격식과는 다소 거리가 있습니다.",
+        color_match: true,
+        color_reason: "사용자가 특정 색상을 언급하지 않았습니다.",
+      },
+      image:
+        "https://images.mcmworldwide.com/i/mcmworldwide/MWPFATA01BK001_01/MWPFATA01BK001/aren-econyl®과-가죽-마마-쇼퍼?$large$&fmt=auto&qlt=default",
+      product_url:
+        "https://kr.mcmworldwide.com/ko_KR/%EC%97%AC%EC%84%B1/%ED%95%B8%EB%93%9C%EB%B0%B1/%EC%87%BC%ED%8D%BC-%ED%86%A0%ED%8A%B8%EB%B0%B1/aren-econyl%C2%AE%EA%B3%BC-%EA%B0%80%EC%A3%BD-%EB%A7%88%EB%A7%88-%EC%87%BC%ED%8D%BC/MWPFATA01BK001.html",
+      primary_sku: "MWPFATA01BK001",
+      max_score: 6,
+    },
+  ],
+  allMatchedTerms: [
+    {
+      term: "올드머니 룩 (Old Money)",
+      trust_level: "통용어",
+      reason: "",
+      matching_keywords: ["브라운", "베이지", "꼬냑", "가죽", "클래식한 로고"],
+      confidence: 0,
+    },
+  ],
+};
+
 export function isMockEnabled(): boolean {
   return process.env.MOCK_TRANSLATE === "1";
 }
@@ -194,5 +293,6 @@ export function getMockResponse(query: string): TranslateResponse {
 }
 
 export function getMockRetryResponse(term: string): TranslateResponse {
+  if (term.includes("올드머니")) return MOCK_OLDMONEY;
   return { ...MOCK_SUCCESS, query: term };
 }

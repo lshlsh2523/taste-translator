@@ -506,13 +506,8 @@ function SuccessResult({
 
       <div className="border-hairline mt-8 border-t pt-8">
         <p className="text-ink-faint text-[0.75rem]">
-          이런 제품은 어때요?
+          {belowThreshold ? "정확히 맞는 제품은 아니지만, 가장 가까운 상품이에요" : "이런 제품은 어때요?"}
           {products.length > 0 && ` · ${products.length}개`}
-          {belowThreshold && (
-            <span className="ml-1" style={{ color: "var(--ct)" }}>
-              · 일치도가 낮은 편이에요
-            </span>
-          )}
         </p>
         {products.length > 0 ? (
           <>
